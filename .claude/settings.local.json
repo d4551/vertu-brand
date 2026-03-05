@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "mcp__6e4473e2-724a-4d96-ac65-18b74d84ea8b__fetch_generic_url_content"
+    ]
+  }
+}

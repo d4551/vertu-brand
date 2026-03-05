@@ -1,0 +1,23 @@
+{
+  "name": "vertu-brand-guide",
+  "version": "4.0.0",
+  "dependencies": {
+    "docx": "^9.6.0",
+    "pptxgenjs": "^4.0.1"
+  },
+  "description": "VERTU Official Brand Guide — Interactive bilingual design specifications, assets, and usage rules",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "audit": "bun run ./scripts/audit-brand-guide.mjs",
+    "build:templates": "bun run ./scripts/generate-templates.mjs",
+    "dev": "bun ./scripts/serve.mjs",
+    "format": "bunx prettier --write \"scripts/**/*.mjs\" \"README.md\" \"package.json\"",
+    "format:check": "bunx prettier --check \"scripts/**/*.mjs\" \"README.md\" \"package.json\"",
+    "serve": "bun run ./scripts/generate-templates.mjs && bun ./scripts/serve.mjs -l 3090"
+  },
+  "type": "module",
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

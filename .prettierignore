@@ -1,0 +1,8 @@
+node_modules
+*.pptx
+*.docx
+*.png
+*.jpg
+*.jpeg
+*.webp
+assets/
