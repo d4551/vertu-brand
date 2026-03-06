@@ -1,13 +1,12 @@
 /**
  * VERTU Brand Template Generator
  *
- * Generates PPTX and DOCX brand templates. Files are written to BOTH the project
- * root (for direct download links in index.html) and the assets/ directory (for the
- * downloads section). This duplication is intentional — root files serve the live
- * download buttons; assets/ files are served from the asset listing.
+ * Generates the canonical PPTX and DOCX brand templates used by the build step.
  */
 import PptxGenJS from "pptxgenjs";
 import * as docx from "docx";
+import { GUIDE_DOWNLOADS } from "../src/shared/config.ts";
+import { writeStructuredLog } from "../src/shared/logger.ts";
 
 /* ─────────────────────────────────────────────
    BRAND CONSTANTS
@@ -1407,13 +1406,21 @@ function buildDocx() {
 
 const pptx = buildPptx();
 const pptxBuf = await pptx.write({ outputType: "uint8array" });
-await Bun.write("VERTU-Template.pptx", pptxBuf);
-await Bun.write("assets/VERTU-Template.pptx", pptxBuf);
+await Bun.write(GUIDE_DOWNLOADS["dl-pptx"].fileName, pptxBuf);
 
 const doc = buildDocx();
 const docxBuf = new Uint8Array(await Packer.toBuffer(doc));
-await Bun.write("VERTU-Letterhead.docx", docxBuf);
-await Bun.write("assets/VERTU-Letterhead.docx", docxBuf);
+await Bun.write(GUIDE_DOWNLOADS["dl-docx"].fileName, docxBuf);
 
-console.log("PPTX:", (pptxBuf.byteLength / 1024).toFixed(0), "KB");
-console.log("DOCX:", (docxBuf.byteLength / 1024).toFixed(0), "KB");
+writeStructuredLog({
+  component: "templates",
+  level: "INFO",
+  message: "Generated presentation template",
+  context: { kilobytes: Number((pptxBuf.byteLength / 1024).toFixed(0)), type: "pptx" },
+});
+writeStructuredLog({
+  component: "templates",
+  level: "INFO",
+  message: "Generated letterhead template",
+  context: { kilobytes: Number((docxBuf.byteLength / 1024).toFixed(0)), type: "docx" },
+});

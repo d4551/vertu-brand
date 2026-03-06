@@ -2,4 +2,6 @@ node_modules/
 .DS_Store
 *.log
 .venv/
+.generated/
+.generated-next-*/
 preview_slide_*.png

@@ -192,6 +192,258 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 /* Scroll progress and toast handled by DaisyUI + Tailwind utilities in HTML */
 
 /* ================================================================
+   SSR SHELL
+================================================================ */
+.guide-page {
+  --guide-page-padding-inline: clamp(1rem, 2vw, 2rem);
+  --guide-page-padding-block: clamp(1.5rem, 3vw, 2.75rem);
+  --guide-stage-gap: clamp(1.25rem, 2.4vw, 2rem);
+  position: relative;
+}
+
+.guide-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-alt) 72%, transparent), transparent);
+}
+
+.guide-topbar {
+  padding: 1rem var(--guide-page-padding-inline);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.guide-brand-lockup {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.guide-brandmark,
+.guide-sidebar-wordmark {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.guide-brandmark:hover,
+.guide-brandmark:focus-visible,
+.guide-sidebar-wordmark:hover,
+.guide-sidebar-wordmark:focus-visible {
+  color: var(--accent);
+}
+
+.guide-brand-copy,
+.guide-sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.guide-brand-title,
+.guide-sidebar-title {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+.guide-brand-description,
+.guide-sidebar-description {
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.guide-sidebar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.guide-lang-group {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.guide-lang-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  min-width: 2.75rem;
+  border-color: var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.guide-lang-btn.btn-active {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.guide-lang-btn:hover:not(.btn-active) {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.guide-theme-toggle {
+  color: var(--ink-soft);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.guide-theme-toggle:hover {
+  color: var(--accent);
+}
+
+.guide-main {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: var(--guide-page-padding-block) var(--guide-page-padding-inline) calc(var(--guide-page-padding-block) * 2);
+}
+
+.guide-alert {
+  margin-bottom: var(--guide-stage-gap);
+}
+
+.guide-request-indicator {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1600;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--v-gold) 24%, transparent);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--ink);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+.guide-request-indicator.htmx-request {
+  display: inline-flex;
+}
+
+.guide-progress-bar {
+  background: linear-gradient(90deg, var(--v-gold-deep), var(--v-gold));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--v-gold) 35%, transparent);
+}
+
+.guide-sidebar-panel {
+  width: min(22rem, 100vw);
+  min-height: 100%;
+  background: color-mix(in srgb, var(--sidebar-bg) 94%, transparent);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.guide-sidebar-header {
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.guide-sidebar-brand-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.guide-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: var(--guide-page-padding-block);
+  scroll-behavior: smooth;
+  scroll-padding-block: 1rem;
+}
+
+.guide-nav-list {
+  width: 100%;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  gap: 0.5rem;
+}
+
+.guide-nav-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.25rem;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.guide-nav-link:hover,
+.guide-nav-link:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.guide-nav-link.menu-active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--ink);
+}
+
+.guide-nav-copy {
+  min-width: 0;
+  line-height: 1.55;
+}
+
+.guide-nav-index {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-top: 0.3rem;
+  flex-shrink: 0;
+}
+
+.guide-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--guide-stage-gap);
+}
+
+.guide-stage .guide-section {
+  padding: clamp(2rem, 4vw, 4rem);
+  margin-bottom: 0;
+  border-bottom: none;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border-radius: 32px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .guide-stage .guide-section {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+/* ================================================================
    COVER
 ================================================================ */
 .cover {
@@ -201,11 +453,38 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: var(--v-black);
-  color: var(--v-cream);
   position: relative;
   overflow: hidden;
-  padding: 48px;
+  padding: clamp(2rem, 5vw, 4rem);
+}
+
+.guide-cover {
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+  background:
+    radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--v-gold) 16%, transparent), transparent 48%),
+    linear-gradient(180deg, color-mix(in srgb, var(--v-black) 98%, transparent), color-mix(in srgb, var(--v-charcoal) 94%, transparent));
+  color: var(--v-cream);
+}
+
+.guide-cover-content {
+  width: min(100%, 1120px);
+  padding: 0;
+}
+
+.guide-cover-body {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 54rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+[data-theme="light"] .guide-cover {
+  background:
+    radial-gradient(circle at 50% 24%, color-mix(in srgb, var(--v-gold) 18%, transparent), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--v-ivory) 96%, white), var(--surface-alt));
+  color: var(--ink);
 }
 .cover-grain {
   position: absolute; inset: 0; opacity: 0.025;
@@ -228,6 +507,10 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   opacity: 0; animation: fadeUp 0.8s var(--ease) 0.8s forwards;
 }
 .cover h1 em { font-style: italic; color: var(--v-gold); }
+.guide-cover-title-en,
+.guide-cover-title-zh {
+  display: inline;
+}
 .cover-sub {
   font-family: var(--font-mono); font-size: 0.75rem; font-weight: 400;
   letter-spacing: 0.3em; text-transform: uppercase; color: var(--v-titanium);
@@ -236,6 +519,8 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 }
 .cover-meta {
   display: flex; gap: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
   font-family: var(--font-mono); font-size: 0.6875rem; color: var(--v-titanium); letter-spacing: 0.1em;
   opacity: 0; animation: fadeUp 0.6s var(--ease) 1.4s forwards;
 }
@@ -243,10 +528,55 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 .cover-scroll {
   position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
   display: flex; flex-direction: column; align-items: center; gap: 8px;
+  text-decoration: none;
   opacity: 0; animation: fadeUp 0.6s var(--ease) 1.7s forwards;
+}
+.cover-scroll:hover span,
+.cover-scroll:focus-visible span {
+  color: var(--v-gold);
+}
+.cover-scroll:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--v-gold) 55%, transparent);
+  outline-offset: 8px;
+  border-radius: 999px;
 }
 .cover-scroll span { font-family: var(--font-mono); font-size: 0.5625rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--v-titanium); }
 .cover-scroll-line { width: 1px; height: 40px; background: linear-gradient(180deg, var(--v-gold-deep), transparent); animation: pulse 2.5s ease-in-out infinite; }
+[data-lang="bi"] .guide-cover h1 {
+  display: grid;
+  gap: 0.14em;
+}
+[data-lang="bi"] .guide-cover-title-en,
+[data-lang="bi"] .guide-cover-title-zh {
+  display: block;
+  margin-left: 0;
+}
+[data-lang="bi"] :is(.guide-brand-title, .guide-sidebar-title, .guide-brand-description, .guide-sidebar-description, .guide-nav-copy, .cover-sub, .cover-scroll span, .cover-meta dt, .cover-meta dd) [data-lang-en],
+[data-lang="bi"] :is(.guide-brand-title, .guide-sidebar-title, .guide-brand-description, .guide-sidebar-description, .guide-nav-copy, .cover-sub, .cover-scroll span, .cover-meta dt, .cover-meta dd) [data-lang-cn] {
+  display: block;
+  margin-left: 0;
+}
+[data-lang="bi"] :is(.guide-brand-title, .guide-sidebar-title, .cover-meta dt) [data-lang-cn] {
+  opacity: 0.78;
+  margin-top: 0.18rem;
+}
+[data-lang="bi"] :is(.guide-brand-description, .guide-sidebar-description, .guide-nav-copy, .cover-sub, .cover-scroll span, .cover-meta dd) [data-lang-cn] {
+  margin-top: 0.26rem;
+}
+[data-lang="bi"] .guide-nav-link {
+  align-items: center;
+}
+[data-theme="light"] .guide-cover .cover-sub,
+[data-theme="light"] .guide-cover .cover-meta,
+[data-theme="light"] .guide-cover .cover-scroll span {
+  color: var(--ink-soft);
+}
+[data-theme="light"] .guide-cover .cover-meta dt {
+  color: var(--accent);
+}
+[data-theme="light"] .guide-cover .cover-scroll-line {
+  background: linear-gradient(180deg, var(--accent), transparent);
+}
 @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse { 0%,100% { opacity: 0.2; } 50% { opacity: 0.9; } }
 
@@ -991,6 +1321,8 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 .type-specimen--mono      { font-family: var(--font-mono); font-size: 1.125rem; padding: 28px 40px; }
 .type-display-mono        { font-family: var(--font-mono); font-size: 1.125rem; }
 .type-preview-default     { font-family: var(--font-display); font-size: 3rem; }
+.type-preview-body        { font-family: var(--font-sans); font-size: 3rem; }
+.type-preview-mono        { font-family: var(--font-mono); font-size: 3rem; }
 
 /* Type-scale classes */
 .type-scale--hero    { font-family: var(--font-display); font-size: 3rem; }
@@ -1457,39 +1789,6 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   }
 }
 
-/* Sidebar upgrades */
-.drawer-side > div {
-  background: var(--sidebar-bg) !important;
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border-right: 1px solid var(--border) !important;
-}
-[data-theme="dark"] .drawer-side > div {
-  background: rgba(8, 8, 8, 0.85) !important;
-}
-
-/* Language select — styled for dark luxury aesthetic */
-.lang-select {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: transparent;
-  border-color: var(--border);
-  color: var(--ink-soft);
-  min-height: 0;
-  height: 2rem;
-  padding-right: 1.5rem;
-}
-.lang-select:focus {
-  border-color: var(--v-gold);
-  outline-color: var(--v-gold);
-}
-.lang-select option {
-  background: var(--surface);
-  color: var(--ink);
-}
-
 /* Section overrides */
 .guide-section {
   padding: 6rem 0;
@@ -1584,4 +1883,3 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
     transform: none !important;
   }
 }
-

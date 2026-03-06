@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "prismjs/themes/prism-tomorrow.css";
+@import "../../../styles/brand-guide.css";
+
+@source "../../../.generated/content";
+@source "../../../src";
+
+@theme {
+  --color-v-black: #080808;
+  --color-v-charcoal: #111111;
+  --color-v-graphite: #1c1c1c;
+  --color-v-gold: #d4b978;
+  --color-v-gold-deep: #c4a55e;
+  --color-v-gold-light: #e8d9a8;
+  --color-v-ruby: #d4364e;
+  --color-v-ruby-deep: #7a1d2e;
+  --color-v-cream: #f2ede5;
+  --color-v-ivory: #faf7f2;
+  --color-v-titanium: #b5afa7;
+}
+
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}

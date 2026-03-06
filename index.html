@@ -2,6 +2,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="VERTU Official Brand Guide - Design specifications, assets, and usage rules">
+  <meta name="htmx-config" content="{&quot;historyRestoreAsHxRequest&quot;:false,&quot;refreshOnHistoryMiss&quot;:false}">
   <meta property="og:title" content="VERTU Brand Guide">
   <meta property="og:description" content="Official VERTU Brand Guidelines and Digital Assets">
   <meta property="og:type" content="website">
@@ -9,70 +10,10 @@
   
   <title>VERTU Brand Guide</title>
 
-  <!-- Local Tailwind CSS Play build -->
-  <script src="./scripts/vendor/tailwindcss-playcdn.js"></script>
-  <script>
-    /* Tailwind Play CDN config — colors here enable utility classes (text-v-gold, bg-v-black, etc.)
-       Canonical source: CSS custom properties in styles/brand-guide.css :root — keep synchronized */
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'v-black': '#080808',
-            'v-charcoal': '#111111',
-            'v-graphite': '#1C1C1C',
-            'v-gold': '#D4B978',
-            'v-gold-deep': '#C4A55E',
-            'v-gold-light': '#E8D9A8',
-            'v-ruby': '#D4364E',
-            'v-ruby-deep': '#7A1D2E',
-            'v-cream': '#F2EDE5',
-            'v-ivory': '#FAF7F2',
-            'v-titanium': '#B5AFA7',
-          },
-        },
-      },
-    }
-  </script>
+  <!-- Built Tailwind CSS 4 + daisyUI 5 bundle, including guide overrides -->
+  <link href="./assets/guide.css" rel="stylesheet">
 
-  <!-- Local daisyUI 5 stylesheet -->
-  <link href="./styles/vendor/daisyui.css" rel="stylesheet" type="text/css">
-
-  <!-- Local Prism.js stylesheet -->
-  <link href="./styles/vendor/prism-tomorrow.min.css" rel="stylesheet">
-
-  <!-- External Styles -->
-  <link href="./styles/brand-guide.css" rel="stylesheet">
-
-  <script>
-    (() => {
-      const languageStorageKey = "vertu-brand-guide.language";
-      const themeStorageKey = "vertu-brand-guide.theme";
-      const languageAlias = { cn: "zh", chinese: "zh" };
-      const supportedLanguages = new Set(["en", "zh", "bi"]);
-      const normalizeLanguage = (value) => {
-        const raw = String(value || "").trim().toLowerCase();
-        const normalized = languageAlias[raw] || raw;
-        return supportedLanguages.has(normalized) ? normalized : "bi";
-      };
-      const normalizeTheme = (value) => (String(value || "").trim().toLowerCase() === "light" ? "light" : "dark");
-
-      let language = "bi";
-      let theme = "dark";
-
-      try {
-        language = normalizeLanguage(window.localStorage.getItem(languageStorageKey));
-        theme = normalizeTheme(window.localStorage.getItem(themeStorageKey));
-      } catch {
-        language = "bi";
-        theme = "dark";
-      }
-
-      document.documentElement.setAttribute("data-lang", language);
-      document.documentElement.setAttribute("data-theme", theme);
-      document.documentElement.lang = language === "zh" ? "zh" : "en";
-    })();
-  </script>
+  <!-- Static download source retains the default SSR language/theme. The live app owns URL state. -->
 </head>
 <body class="bg-base-100 text-base-content antialiased min-h-screen relative w-full overflow-x-hidden">
   <a href="#main-content" class="skip-link sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[1200] focus:bg-primary focus:text-primary-content focus:font-semibold focus:px-4 focus:py-2 focus:rounded">
@@ -98,12 +39,12 @@
     <img class="cover-logo h-9 mb-14 opacity-0 animate-[fadeUp_0.8s_cubic-bezier(0,0,0.2,1)_0.3s_forwards]" src="./VERTU-Logo-White.png" alt="" aria-hidden="true" width="160" height="53">
     <div class="cover-rule w-[60px] h-[1px] bg-v-gold mb-10 opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0,0,0.2,1)_0.6s_forwards]" aria-hidden="true"></div>
     <h1 class="font-['Instrument_Serif'] text-[clamp(2.5rem,5vw,4.5rem)] leading-[1.15] tracking-[-0.02em] font-normal mb-5 opacity-0 animate-[fadeUp_0.8s_cubic-bezier(0,0,0.2,1)_0.8s_forwards]">
-      <span data-lang-en="">Brand <em class="italic text-v-gold">Design</em> Guide</span>
-      <span data-lang-cn="">品牌<em class="italic text-v-gold">设计</em>指南</span>
+      <span data-lang-en="">The Art of <em class="italic text-v-gold">Timeless</em> Distinction</span>
+      <span data-lang-cn="">恒久<em class="italic text-v-gold">非凡</em>之道</span>
     </h1>
     <p class="cover-sub font-['IBM_Plex_Mono'] text-xs font-normal tracking-[0.3em] uppercase text-v-titanium mb-14 opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0,0,0.2,1)_1.1s_forwards]">
-      <span data-lang-en="">Visual Identity &amp; Standards — Interactive Edition</span>
-      <span data-lang-cn="">视觉识别与规范 — 交互版</span>
+      <span data-lang-en="">Brand Identity &amp; Design Principles: Living Edition</span>
+      <span data-lang-cn="">品牌精神与设计原则: 活态版</span>
     </p>
     <div class="cover-meta flex flex-col md:flex-row gap-4 md:gap-12 font-['IBM_Plex_Mono'] text-[0.6875rem] text-v-titanium tracking-[0.1em] opacity-0 animate-[fadeUp_0.6s_cubic-bezier(0,0,0.2,1)_1.4s_forwards]">
       <dl class="flex flex-col">
@@ -170,45 +111,46 @@
           <span data-lang-en="">VERTU Brand Guide</span>
           <span data-lang-cn="">VERTU 品牌指南</span>
         </h2>
-        <p class="body-copy" data-lang-en="">A bilingual operations reference for the VERTU visual system, interactions, and brand governance. Built for teams launching across web, print, and campaign assets.</p>
-        <p class="body-copy" data-lang-cn="">用于指导 VERTU 在网页、印刷与传播资产中的视觉系统与交互规范。兼顾双语协作，支持 Web、印刷与市场活动资源落地。</p>
+        <p class="body-copy" data-lang-en="">In a world that accelerates without pause, VERTU stands for something rarer than luxury: it stands for sovereignty over your own time, attention, and experience. This guide is the living codex of that conviction: the principles, the craft, and the visual language that make VERTU unmistakable wherever it appears.</p>
+        <p class="body-copy" data-lang-cn="">在一个不断加速的世界里，VERTU 代表着比奢华更珍贵的存在: 对自身时间、注意力与体验的主权。本指南是这一信念的活态典籍：原则、工艺与视觉语言，令 VERTU 无论置身何处都无可替代。</p>
       </section>
       <section class="guide-section mb-16 reveal" id="s1">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 01</span><span data-lang-cn="">第一章</span></span>
       <h2 class="section-title"><span data-lang-en="">Brand Essence</span><span data-lang-cn="">品牌本质</span></h2>
-      <p class="section-intro" data-lang-en="">VERTU exists at the intersection of master artisanship and technological innovation. Founded in 1998 by Frank Nuovo within Nokia, the brand pioneered luxury mobile telephony — transforming communication devices into personal masterpieces crafted from the world's rarest materials.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 矗立于精湛工艺与前沿科技的交汇之处。品牌由 Frank Nuovo 于1998年在诺基亚内部创立，开创了奢华移动通讯的先河 — 将通信设备转化为以世界上最珍贵稀有材料打造的个人杰作。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU was born from a singular conviction: that personal technology should be timeless in a world obsessed with the next. Founded in 1998 by Frank Nuovo, the brand pioneered luxury mobile telephony: not to keep pace with an accelerating world, but to offer an enduring counterpoint to it. Every device is a declaration that craft, permanence, and human intention matter more than speed.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 诞生于一个独特的信念：在一个执迷于「下一个」的世界里，个人科技应当经得起时间的考验。品牌由 Frank Nuovo 于1998年创立，开创了奢华移动通讯的先河: 不是为了追赶加速的世界，而是为其提供一个恒久的注脚。每一台设备都在宣告：工艺、永恒与人的意志，比速度更有意义。</p></div>
       
       
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Mission</span><span data-lang-cn="">使命</span></span>
-        <p class="body-copy" data-lang-en="">To craft personal technology of uncompromising quality and enduring beauty — devices that are not merely tools, but expressions of individuality, status, and taste.</p>
-        <p class="body-copy" data-lang-cn="">打造品质卓越、隽永之美的个人科技 — 不仅是工具，更是个性、地位与品味的表达。</p>
+        <p class="body-copy" data-lang-en="">To create instruments of enduring beauty and uncompromising intelligence: technology that liberates your time, amplifies your intent, and stands as a quiet declaration of who you are. Not a tool that demands your attention, but a companion that earns it.</p>
+        <p class="body-copy" data-lang-cn="">创造隽永之美与卓越智能的器物: 释放你的时间、放大你的意志，静默地宣告你的独特存在。不是索取注意力的工具，而是值得注意力的同行者。</p>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Vision</span><span data-lang-cn="">愿景</span></span>
-        <p class="body-copy" data-lang-en="">To be the definitive luxury technology house — where handcrafted artistry, rare materials, and intelligent innovation converge to serve those who shape the world.</p>
-        <p class="body-copy" data-lang-cn="">成为引领世界的奢华科技品牌 — 手工艺术、珍稀材料与智能创新在此交融，服务于塑造世界的精英人群。</p>
+        <p class="body-copy" data-lang-en="">To be the singular house where master craft, rare materials, and agentic intelligence converge: empowering those who refuse to be passengers in their own lives to shape the world on their own terms.</p>
+        <p class="body-copy" data-lang-cn="">成为匠心工艺、珍稀材料与智能科技交汇的唯一殿堂: 赋能那些拒绝在自己的人生中做旁观者的人，以自己的方式塑造世界。</p>
       </div><div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Brand Values</span><span data-lang-cn="">品牌价值</span></span>
         <div class="keyword-row">
           <span class="keyword"><span data-lang-en="">Craftsmanship</span><span data-lang-cn="">匠心工艺</span></span>
-          <span class="keyword"><span data-lang-en="">Exclusivity</span><span data-lang-cn="">至臻独享</span></span>
-          <span class="keyword"><span data-lang-en="">Heritage</span><span data-lang-cn="">传承底蕴</span></span>
-          <span class="keyword"><span data-lang-en="">Innovation</span><span data-lang-cn="">科技创新</span></span>
+          <span class="keyword"><span data-lang-en="">Freedom</span><span data-lang-cn="">自在从容</span></span>
+          <span class="keyword"><span data-lang-en="">Timelessness</span><span data-lang-cn="">恒久隽永</span></span>
+          <span class="keyword"><span data-lang-en="">Intelligence</span><span data-lang-cn="">智慧赋能</span></span>
+          <span class="keyword"><span data-lang-en="">Distinction</span><span data-lang-cn="">卓然独立</span></span>
           <span class="keyword"><span data-lang-en="">Personalisation</span><span data-lang-cn="">私人定制</span></span>
         </div>
       </div><div class="reveal reveal-d4 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Positioning</span><span data-lang-cn="">品牌定位</span></span>
-        <p class="body-copy" data-lang-en="">VERTU occupies a singular position as the world's original luxury mobile phone brand. Competitors offer premium specs; VERTU offers handcrafted permanence. Each device is assembled by artisans in Naples and Ubrique across 320+ steps — using titanium, sapphire, gold, and exotic leathers from the same ateliers supplying the world's finest fashion houses.</p>
-        <p class="body-copy" data-lang-cn="">VERTU 占据独特地位，作为世界上最早的奢华手机品牌。竞争对手提供高端配置，而 VERTU 提供手工打造的恒久价值。每台设备由那不勒斯和乌夫里克的工匠经320余道工序组装而成 — 使用钛金属、蓝宝石、黄金和来自为世界顶级时装品牌供货的同一工坊的珍稀皮革。</p>
+        <p class="body-copy" data-lang-en="">In an industry that measures relevance in months, VERTU measures it in decades. The world's original luxury mobile house does not compete on specifications: it stands apart through handcrafted permanence and intelligent purpose. Each device is assembled by artisans across 320+ meticulous steps, using titanium, sapphire, gold, and exotic leathers from the same ateliers that serve the world's finest fashion houses. Now, with agentic AI at its core, VERTU extends this philosophy from material craft to digital intelligence: technology that anticipates, protects, and frees you to live deliberately.</p>
+        <p class="body-copy" data-lang-cn="">在一个以月度衡量「相关性」的行业中，VERTU 以十年为尺。世界最早的奢华手机品牌不以参数竞争: 而是以手工打造的恒久价值与智能目标卓然独立。每台设备由匠人历经320余道精密工序组装而成，使用钛金属、蓝宝石、黄金与来自世界顶级时装工坊的珍稀皮革。如今，以智能体 AI 为核心，VERTU 将这一哲学从材质工艺延伸至数字智慧: 预见、守护，并赋予你从容生活的自由。</p>
       </div></div></section>
 <section class="guide-section mb-16 reveal" id="s2">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 02</span><span data-lang-cn="">第二章</span></span>
       <h2 class="section-title"><span data-lang-en="">Logo System</span><span data-lang-cn="">标志系统</span></h2>
-      <p class="section-intro" data-lang-en="">The VERTU wordmark is the primary brand identifier. Set in custom uppercase letterforms, it communicates precision, authority, and permanence. It must never be modified, stretched, or recoloured outside the approved palette.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 文字标志是品牌的首要识别符。采用定制大写字母形态，传递精准、权威与永恒。标志不得以任何方式修改、拉伸或在核准色板之外重新着色。</p></div>
+      <p class="section-intro" data-lang-en="">The VERTU wordmark is permanence made visible. Set in custom uppercase letterforms, it communicates quiet authority and unhurried confidence: a fixed point in a visual landscape that reinvents itself every season. It must never be modified, stretched, or recoloured outside the approved palette.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 文字标志是恒久的可见形态。采用定制大写字母形态，传递静谧的权威与从容的自信: 是在季季翻新的视觉世界中的不动锭点。标志不得以任何方式修改、拉伸或在核准色板之外重新着色。</p></div>
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
@@ -227,8 +169,8 @@
 <section class="guide-section mb-16 reveal" id="s3">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 03</span><span data-lang-cn="">第三章</span></span>
       <h2 class="section-title"><span data-lang-en="">Colour Palette</span><span data-lang-cn="">色彩系统</span></h2>
-      <p class="section-intro" data-lang-en="">The VERTU palette is deliberately restrained — anchored in rich blacks and signature gold, with ruby as a powerful accent. Click any swatch to copy its hex value.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 色彩体系刻意克制 — 以浓郁黑色与标志性金色为锚点，红宝石色作为有力点缀。点击任意色块复制其十六进制色值。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU’s palette is an exercise in deliberate restraint: a refusal to chase chromatic trends. Anchored in rich blacks and signature gold, with ruby as a powerful accent, each colour exists because it earns its place. In a world of visual noise, this discipline is itself a statement of freedom. Click any swatch to copy its hex value.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 的色彩体系是克制的艺术: 拒绝追逐色彩潮流。以浓郁黑色与标志性金色为锭，红宝石色作为有力点缀，每一种颜色的存在都因其实至名归。在视觉喧杂的世界里，这种自律本身就是自由的宣言。点击任意色块复制其十六进制色值。</p></div>
       
       
     <div class="bento-grid mt-12">
@@ -238,10 +180,10 @@
       <p class="body-copy mb-8 text-v-titanium text-sm" data-lang-cn="">VERTU 在数字界面中运用色彩的可视化表现。黑色主导版面，金色与红宝石色提供选择性强调。</p>
         <div class="color-chart-container">
         <div class="color-chart">
-          <div class="color-chart-segment color-chart-segment-65">65% VERTU Black</div>
-          <div class="color-chart-segment color-chart-segment-20">20% Charcoal</div>
-          <div class="color-chart-segment color-chart-segment-10">10% Gold</div>
-          <div class="color-chart-segment color-chart-segment-5">5% Ruby</div>
+          <div class="color-chart-segment color-chart-segment-65" data-i18n-text="colorDistribution65">65% VERTU Black</div>
+          <div class="color-chart-segment color-chart-segment-20" data-i18n-text="colorDistribution20">20% Charcoal</div>
+          <div class="color-chart-segment color-chart-segment-10" data-i18n-text="colorDistribution10">10% Gold</div>
+          <div class="color-chart-segment color-chart-segment-5" data-i18n-text="colorDistribution5">5% Ruby</div>
         </div>
       </div>
     </div>
@@ -281,65 +223,65 @@
 <section class="guide-section mb-16 reveal" id="s4">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 04</span><span data-lang-cn="">第四章</span></span>
       <h2 class="section-title"><span data-lang-en="">Pantone &amp; Print Reference</span><span data-lang-cn="">潘通与印刷参考</span></h2>
-      <p class="section-intro" data-lang-en="">For physical collateral, these Pantone spot colours ensure fidelity across substrates. Always request a press proof — metallic inks are highly substrate-sensitive. Click any chip to copy its reference.</p>
-      <p class="section-intro" data-lang-cn="">用于实体物料时，以下潘通专色可确保跨基材的色彩保真度。务必申请打样 — 金属油墨对基材极为敏感。点击色片可复制其参考值。</p></div>
+      <p class="section-intro" data-lang-en="">For physical collateral, these Pantone spot colours ensure fidelity across substrates. Always request a press proof: metallic inks are highly substrate-sensitive. Click any chip to copy its reference.</p>
+      <p class="section-intro" data-lang-cn="">用于实体物料时，以下潘通专色可确保跨基材的色彩保真度。务必申请打样: 金属油墨对基材极为敏感。点击色片可复制其参考值。</p></div>
       
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Metallic Gold — Spot Colour</span><span data-lang-cn="">金属金 — 专色</span></span>
+        <span class="sub-label"><span data-lang-en="">Metallic Gold: Spot Colour</span><span data-lang-cn="">金属金: 专色</span></span>
         <p class="body-copy" data-lang-en="">VERTU Gold should be printed as a metallic spot ink whenever possible. CMYK reproduction cannot capture the material shimmer central to the brand identity.</p>
         <p class="body-copy" data-lang-cn="">VERTU 金色应尽可能使用金属专色油墨印刷。CMYK 四色印刷无法呈现品牌标识核心的金属光泽。</p>
         <div class="pantone-row">
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE 871 C">
-            <div class="pantone-swatch pantone-871"></div><div class="pantone-label" data-kopier="PANTONE 871 C"><strong>PANTONE 871 C</strong>Metallic Gold · Primary</div>
+            <div class="pantone-swatch pantone-871"></div><div class="pantone-label" data-kopier="PANTONE 871 C"><strong>PANTONE 871 C</strong><span data-i18n-text="pantone871Label">Metallic Gold · Primary</span></div>
           </button>
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE 872 C">
-            <div class="pantone-swatch pantone-872"></div><div class="pantone-label" data-kopier="PANTONE 872 C"><strong>PANTONE 872 C</strong>Metallic Gold · Rich</div>
+            <div class="pantone-swatch pantone-872"></div><div class="pantone-label" data-kopier="PANTONE 872 C"><strong>PANTONE 872 C</strong><span data-i18n-text="pantone872Label">Metallic Gold · Rich</span></div>
           </button>
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE 10124 C">
-            <div class="pantone-swatch pantone-10124"></div><div class="pantone-label" data-kopier="PANTONE 10124 C"><strong>PANTONE 10124 C</strong>Premium Metallic</div>
+            <div class="pantone-swatch pantone-10124"></div><div class="pantone-label" data-kopier="PANTONE 10124 C"><strong>PANTONE 10124 C</strong><span data-i18n-text="pantone10124Label">Premium Metallic</span></div>
           </button>
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Solid Colour References</span><span data-lang-cn="">实色参考</span></span>
         <div class="pantone-row">
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE Black 6 C">
-            <div class="pantone-swatch pantone-black-6"></div><div class="pantone-label" data-kopier="PANTONE Black 6 C"><strong>PANTONE Black 6 C</strong>VERTU Black</div>
+            <div class="pantone-swatch pantone-black-6"></div><div class="pantone-label" data-kopier="PANTONE Black 6 C"><strong>PANTONE Black 6 C</strong><span data-i18n-text="pantoneBlack6Label">VERTU Black</span></div>
           </button>
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE 1935 C">
-            <div class="pantone-swatch pantone-1935"></div><div class="pantone-label" data-kopier="PANTONE 1935 C"><strong>PANTONE 1935 C</strong>Ruby</div>
+            <div class="pantone-swatch pantone-1935"></div><div class="pantone-label" data-kopier="PANTONE 1935 C"><strong>PANTONE 1935 C</strong><span data-i18n-text="pantone1935Label">Ruby</span></div>
           </button>
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PANTONE 7527 C">
-            <div class="pantone-swatch pantone-7527"></div><div class="pantone-label" data-kopier="PANTONE 7527 C"><strong>PANTONE 7527 C</strong>Cream</div>
+            <div class="pantone-swatch pantone-7527"></div><div class="pantone-label" data-kopier="PANTONE 7527 C"><strong>PANTONE 7527 C</strong><span data-i18n-text="pantone7527Label">Cream</span></div>
           </button>
           <button type="button" class="pantone-chip" data-copy-kind="pantone" data-copy-value="PMS Warm Gray 5 C">
-            <div class="pantone-swatch pantone-warm-gray-5"></div><div class="pantone-label" data-kopier="PMS Warm Gray 5 C"><strong>PMS Warm Gray 5 C</strong>Titanium</div>
+            <div class="pantone-swatch pantone-warm-gray-5"></div><div class="pantone-label" data-kopier="PMS Warm Gray 5 C"><strong>PMS Warm Gray 5 C</strong><span data-i18n-text="pantoneWarmGray5Label">Titanium</span></div>
           </button>
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Foil &amp; Embossing</span><span data-lang-cn="">烫金与压印</span></span>
-        <p class="body-copy" data-lang-en="">For luxury packaging and boutique collateral, apply VERTU Gold via hot foil stamping using Kurz Luxor® 220 gold foil (or equivalent). Blind embossing of the wordmark is approved for premium stationery. Always pair foil with uncoated or soft-touch laminated substrates — never gloss.</p>
-        <p class="body-copy" data-lang-cn="">对于奢华包装和精品物料，使用 Kurz Luxor® 220 金箔（或同等品）进行烫金。文字标志的无色压印适用于高端文具。烫金务必搭配无涂层或触感覆膜基材 — 切忌光面。</p>
+        <p class="body-copy" data-lang-en="">For luxury packaging and boutique collateral, apply VERTU Gold via hot foil stamping using Kurz Luxor® 220 gold foil (or equivalent). Blind embossing of the wordmark is approved for premium stationery. Always pair foil with uncoated or soft-touch laminated substrates: never gloss.</p>
+        <p class="body-copy" data-lang-cn="">对于奢华包装和精品物料，使用 Kurz Luxor® 220 金箔（或同等品）进行烫金。文字标志的无色压印适用于高端文具。烫金务必搭配无涂层或触感覆膜基材: 切忌光面。</p>
       </div></div></section>
 <section class="guide-section mb-16 reveal" id="s5">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 05</span><span data-lang-cn="">第五章</span></span>
       <h2 class="section-title"><span data-lang-en="">Typography</span><span data-lang-cn="">字体排版</span></h2>
-      <p class="section-intro" data-lang-en="">VERTU's typographic system pairs an expressive serif display with a clean sans-serif for body text. The tension between heritage and modernity mirrors the brand's identity. Use the playground below to explore the system interactively.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 的字体系统将富有表现力的衬线展示字体与简洁的无衬线正文字体相搭配。传承与现代之间的张力映射了品牌的内在气质。请使用下方的交互式演练场探索字体系统。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU’s typographic system pairs an expressive serif display with a precise sans-serif for body text. This tension: heritage meeting modernity, hand meeting machine: mirrors the brand’s fundamental identity: enduring craft animated by intelligent purpose. Use the playground below to explore the system interactively.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 的字体系统将富有表现力的衬线展示字体与精确的无衬线正文字体相搭配。这种张力: 传承与现代相遇，手工与机械交融: 映射出品牌的根本身份：以智慧目标驱动的恒久工艺。请使用下方的交互式演练场探索字体系统。</p></div>
       
       
       
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-12 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Display — Playfair Display</span><span data-lang-cn="">展示字体 — Playfair Display</span></span>
+        <span class="sub-label"><span data-lang-en="">Display: Playfair Display</span><span data-lang-cn="">展示字体: Playfair Display</span></span>
         <div class="type-specimen"><div class="type-display type-specimen--display">The Art of Extraordinary</div><div class="type-meta"><span data-i18n-text="typeMetaRegularItalic">Regular 400 &amp; Italic</span><span data-i18n-text="typeMetaHeadlinesHeroQuotes">Headlines · Hero · Quotes</span><span data-i18n-text="typeMetaMin24Px">Min: 24px</span></div></div>
       </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Body — DM Sans</span><span data-lang-cn="">正文字体 — DM Sans</span></span>
+        <span class="sub-label"><span data-lang-en="">Body: DM Sans</span><span data-lang-cn="">正文字体: DM Sans</span></span>
         <div class="type-specimen"><div class="type-display type-specimen--body">Handcrafted by master artisans using the world's most precious materials.</div><div class="type-meta"><span data-i18n-text="typeMetaBodyWeights">400, 500, 600</span><span data-i18n-text="typeMetaBodyLabels">Body · Nav · UI · Labels</span><span data-i18n-text="typeMetaMin14Px">Min: 14px</span></div></div>
       </div><div class="reveal reveal-d3 bento-card bento-col-12 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Mono — IBM Plex Mono</span><span data-lang-cn="">等宽字体 — IBM Plex Mono</span></span>
+        <span class="sub-label"><span data-lang-en="">Mono: IBM Plex Mono</span><span data-lang-cn="">等宽字体: IBM Plex Mono</span></span>
         <div class="type-specimen type-specimen--mono"><div class="type-display type-display-mono">AGENT-Q-ALLIGATOR-GOLD // MK3-2025</div><div class="type-meta"><span>300, 400, 500</span><span data-i18n-text="typeMetaSpecsMetadataCodes">Specs · Labels · Metadata · Product codes</span></div></div>
       </div><div class="reveal reveal-d4 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Interactive Playground</span><span data-lang-cn="">交互式演练场</span></span>
@@ -378,8 +320,8 @@
 <section class="guide-section mb-16 reveal" id="s6">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 06</span><span data-lang-cn="">第六章</span></span>
       <h2 class="section-title"><span data-lang-en="">Photography &amp; Imagery</span><span data-lang-cn="">摄影与图像</span></h2>
-      <p class="section-intro" data-lang-en="">VERTU imagery should evoke tactility, material warmth, and quiet drama. Every photograph should feel as though you could reach in and touch the leather, feel the weight of titanium, sense the cool of sapphire crystal. Hover images below to see direction labels.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 图像应唤起触感、材质温度与静谧的戏剧性。每一张照片都应让人仿佛能伸手触摸皮革、感受钛金属的重量、体会蓝宝石水晶的清凉。悬停图片可查看方向标注。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU imagery invites the viewer to slow down. Every photograph should feel as though you could reach in and touch the leather, feel the weight of titanium, sense the cool of sapphire crystal. In a visual culture that skims, VERTU photography rewards attention: it exists outside of trends, anchored in material truth and quiet drama. Hover images below to see direction labels.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 的图像邀请观者放慢脚步。每一张照片都应让人仿佛能伸手触摸皮革、感受钛金属的分量、体会蓝宝石水晶的清凉。在一个浮光掠影的视觉文化中，VERTU 的摄影奖励专注: 它超越潮流而存在，植根于材质的真实与静谧的戏剧性。悬停图片可查看方向标注。</p></div>
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
@@ -389,19 +331,19 @@
           <div class="photo-cell"><img src="./assets/images/quantum-flip-baqua-gilded-lacquer-gold-v.webp" data-i18n-alt="photoDetailAlt" alt="Quantum Flip photography" loading="lazy" width="768" height="768"><span class="photo-cell-label" data-i18n-text="photoCellDetail"></span></div>
           <div class="photo-cell"><img src="./assets/images/black-red.webp" data-i18n-alt="photoColourAlt" alt="Signature S+ photography" loading="lazy" width="768" height="768"><span class="photo-cell-label" data-i18n-text="photoCellColour"></span></div>
         </div>
-        <p class="body-copy" data-lang-en="">Product imagery uses dark, low-key lighting with controlled specular highlights. Backgrounds are deep black (#080808) or dark gradients. The product commands attention through its own material presence — lighting should be dramatic but never theatrical.</p>
-        <p class="body-copy" data-lang-cn="">产品图像采用暗调、低调照明与可控的镜面高光。背景为深黑色（#080808）或暗色渐变。产品通过自身材质的存在感吸引注意力 — 照明应具戏剧性但绝不夸张。</p>
+        <p class="body-copy" data-lang-en="">Product imagery uses dark, low-key lighting with controlled specular highlights. Backgrounds are deep black (#080808) or dark gradients. The product commands attention through its own material presence: lighting reveals, it never performs. Like the brand itself, the image asks you to look closer, not scroll faster.</p>
+        <p class="body-copy" data-lang-cn="">产品图像采用暗调、低调照明与可控的镜面高光。背景为深黑色（#080808）或暗色渐变。产品通过自身材质的存在感吸引注意: 光线是揭示，而非表演。如同品牌本身，图像请你更仔细地看，而不是更快地滑过。</p>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Principles</span><span data-lang-cn="">核心原则</span></span>
         <div class="keyword-row"><span class="keyword">Tactile</span><span class="keyword">Low-key</span><span class="keyword">Material-first</span><span class="keyword">Warm highlights</span><span class="keyword">Quiet drama</span></div>
-        <p class="body-copy" data-lang-en="">Avoid: clinical white backgrounds, over-retouched skin, harsh direct flash, visible competitor branding, cluttered compositions. Every frame should breathe — generous negative space is a VERTU hallmark.</p>
-        <p class="body-copy" data-lang-cn="">避免：临床感白色背景、过度修图的皮肤、刺目的直闪、可见的竞品标识、杂乱的构图。每一帧画面都应留有呼吸空间 — 充裕的负空间是 VERTU 的标志性特征。</p>
+        <p class="body-copy" data-lang-en="">Avoid: clinical white backgrounds, over-retouched skin, harsh direct flash, visible competitor branding, cluttered compositions. Every frame should breathe: generous negative space is a VERTU hallmark, a visual insistence that there is no rush.</p>
+        <p class="body-copy" data-lang-cn="">避免：临床感白色背景、过度修图的皮肤、刺目的直闪、可见的竞品标识、杂乱的构图。每一帧画面都应留有呼吸空间: 充裕的负空间是 VERTU 的标志性特征，是对「无需匆忙」的视觉宣言。</p>
       </div></div></section>
 <section class="guide-section mb-16 reveal" id="s7">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 07</span><span data-lang-cn="">第七章</span></span>
       <h2 class="section-title"><span data-lang-en="">Tone of Voice</span><span data-lang-cn="">品牌语调</span></h2>
-      <p class="section-intro" data-lang-en="">VERTU speaks with the confidence of heritage and the clarity of modern intelligence. The voice is never loud, never boastful — it is measured, assured, and inviting. We do not sell; we invite discovery.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 以传承的自信与现代智慧的清晰发声。语调从不喧哗、从不炫耀 — 它沉稳、笃定且引人入胜。我们不做推销，我们邀请探索。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU speaks with the confidence of permanence and the clarity of purpose. The voice is never loud, never boastful: it is measured, assured, and inviting. In a marketplace that shouts for attention, VERTU grants you permission to slow down. We do not sell; we invite discovery. We do not chase; we remain.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 以恒久的自信与目标的清晰发声。语调从不喧哗、从不炫耀: 它沉稳、笃定且引人入胜。在一个高声争夺注意力的市场中，VERTU 给予你放慢脚步的许可。我们不做推销，我们邀请探索。我们不追逐，我们岿然而立。</p></div>
       
       
       
@@ -420,19 +362,19 @@
           <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">"Each Vertu is handcrafted by master artisans, using only the world's most precious and rare materials."</p><p class="guideline-text" data-lang-cn="">「每一部 VERTU，皆由匠心大师以世间至臻珍稀之材，手工雕琢而成。」</p></div>
           <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">"Our phones are made with the BEST and most EXPENSIVE materials money can buy!!!"</p><p class="guideline-text" data-lang-cn="">「我们的手机用的都是最好最贵的材料！！！」</p></div>
           <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">"Define your individuality. Craft a Vertu that is truly your own."</p><p class="guideline-text" data-lang-cn="">「定义独属于你的非凡。打造一部真正属于你的 VERTU。」</p></div>
-          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">"Customize now! Limited time offer — order today!"</p><p class="guideline-text" data-lang-cn="">「快来定制吧！限时特惠 — 今天就下单！」</p></div>
+          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">"Customize now! Limited time offer: order today!"</p><p class="guideline-text" data-lang-cn="">「快来定制吧！限时特惠: 今天就下单！」</p></div>
         </div>
       </div><div class="reveal reveal-d3 mt-guide-section bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Language Spectrum</span><span data-lang-cn="">语言范畴</span></span>
-        <p class="body-copy" data-lang-en="">VERTU language sits between haute horlogerie editorial precision and the warmth of a personal concierge. Avoid tech jargon as a lead. Avoid urgency-driven retail language. The brand never shouts — it whispers with certainty.</p>
-        <p class="body-copy" data-lang-cn="">VERTU 的语言介于高级制表品牌的编辑精度与私人管家的温暖之间。避免以技术术语开头，避免急促的零售用语。品牌从不喧嚣 — 它以笃定低语。</p>
+        <p class="body-copy" data-lang-en="">VERTU language sits between haute horlogerie editorial precision and the warmth of a personal concierge. It never leads with specifications. It never creates urgency. Instead, it offers the reader a moment of stillness: a quiet invitation to consider what truly matters. The brand never shouts; it whispers with certainty, and the world leans in to listen.</p>
+        <p class="body-copy" data-lang-cn="">VERTU 的语言介于高级制表品牌的编辑精度与私人管家的温暖之间。它从不以技术参数开头，从不制造急迫感。相反，它为读者提供一个静谧的时刻: 一份思考什么真正重要的从容邀请。品牌从不喧嚣；它以笃定低语，世界侧耳倾听。</p>
       </div><div class="reveal reveal-d4 mt-guide-section bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Chinese Composition Guidance</span><span data-lang-cn="">中文撰写规范</span></span>
         <div class="guidelines-grid">
-          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">“Each Vertu is handcrafted by master artisans, with the world’s rarest materials, shaped with measured cadence and restrained elegance.” — Literary cadence, elevated tone.</p><p class="guideline-text" data-lang-cn="">「每一部 VERTU，皆由匠心大师以世间至臻珍稀之材，手工雕琢而成。」— 文言节奏，意蕴深远。</p></div>
-          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">“These are the best and most expensive materials money can buy — order yours now!”</p><p class="guideline-text" data-lang-cn="">「我们的手机用的都是最好最贵的材料！！！赶紧买！」— 过度口语化，缺乏品牌格调。</p></div>
-          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">“Define your individuality. Create a Vertu that is uniquely yours.”</p><p class="guideline-text" data-lang-cn="">「定义独属于你的非凡。」— 简洁优雅，四字成韵。</p></div>
-          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">“Customize your phone now! Limited-time discount available today!”</p><p class="guideline-text" data-lang-cn="">「快来定制你的手机吧！限时特惠！」— 促销语调与奢侈品牌气质相悖。</p></div>
+          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">“Each Vertu is handcrafted by master artisans, with the world’s rarest materials, shaped with measured cadence and restrained elegance.”: Literary cadence, elevated tone.</p><p class="guideline-text" data-lang-cn="">「每一部 VERTU，皆由匠心大师以世间至臻珍稀之材，手工雕琢而成。」:  文言节奏，意蕴深远。</p></div>
+          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">“These are the best and most expensive materials money can buy: order yours now!”</p><p class="guideline-text" data-lang-cn="">「我们的手机用的都是最好最贵的材料！！！赶紧买！」:  过度口语化，缺乏品牌格调。</p></div>
+          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">“Define your individuality. Create a Vertu that is uniquely yours.”</p><p class="guideline-text" data-lang-cn="">「定义独属于你的非凡。」:  简洁优雅，四字成韵。</p></div>
+          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">“Customize your phone now! Limited-time discount available today!”</p><p class="guideline-text" data-lang-cn="">「快来定制你的手机吧！限时特惠！」:  促销语调与奢侈品牌气质相悖。</p></div>
         </div>
         <p class="body-copy mt-guide-note" data-lang-en="">Chinese copy should use four-character idioms to preserve classical elegance; use whitespace and deliberate punctuation for rhythm; use full-width Chinese punctuation 「」 consistently instead of straight quotes; avoid internet slang; keep the brand name as “VERTU” in Latin characters at all times.</p>
         <p class="body-copy mt-guide-note" data-lang-cn="">中文文案应注意：使用四字成语增添典雅感；善用留白与断句营造节奏；标点统一使用中文全角符号「」而非""；避免网络流行语；品牌名称始终使用 VERTU 拉丁字母拼写，不使用中文音译。</p>
@@ -440,8 +382,8 @@
 <section class="guide-section mb-16 reveal" id="s8">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 08</span><span data-lang-cn="">第八章</span></span>
       <h2 class="section-title"><span data-lang-en="">Motion &amp; Animation</span><span data-lang-cn="">动效与动画</span></h2>
-      <p class="section-intro" data-lang-en="">Motion in VERTU's digital experiences should feel graceful and unhurried. Every animation should express refinement, not decoration. Hover the third demo below to see the "Refine" interaction in action.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 数字体验中的动效应优雅从容。每一个动画都应表达精致，而非装饰。将鼠标悬停在下方第三个演示上可体验"精炼"交互效果。</p></div>
+      <p class="section-intro" data-lang-en="">Motion in VERTU’s digital experiences should feel like time itself has decelerated: graceful, unhurried, and purposeful. Every animation should express refinement, never urgency. In a world of flashing notifications and dopamine-driven interfaces, VERTU’s motion language is an act of resistance: slow is the new luxury. Hover the third demo below to see the "Refine" interaction in action.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 数字体验中的动效应让人感觉时间本身在放慢: 优雅、从容、有目的性。每一个动画都应表达精致，绝非急迫。在一个充斥闪烁通知与多巴胺驱动界面的世界里，VERTU 的动效语言是一种抵抗：慢，是新的奢华。将鼠标悬停在下方第三个演示上可体验「精炼」交互效果。</p></div>
       
       
       
@@ -454,8 +396,8 @@
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Easing Curve</span><span data-lang-cn="">缓动曲线</span></span>
-        <p class="body-copy" data-lang-en="">Primary: <code>cubic-bezier(0.0, 0.0, 0.2, 1)</code> — a smooth ease-out that decelerates gracefully, like a precision hinge coming to rest. Avoid linear or bouncy easing; they feel cheap and mechanical.</p>
-        <p class="body-copy" data-lang-cn="">主缓动曲线：<code>cubic-bezier(0.0, 0.0, 0.2, 1)</code> — 平滑的缓出效果，如精密铰链般优雅减速。避免线性或弹跳缓动，它们显得廉价且机械。</p>
+        <p class="body-copy" data-lang-en="">Primary: <code>cubic-bezier(0.0, 0.0, 0.2, 1)</code>: a smooth ease-out that decelerates gracefully, like a precision hinge coming to rest. Avoid linear or bouncy easing; they feel cheap and mechanical.</p>
+        <p class="body-copy" data-lang-cn="">主缓动曲线：<code>cubic-bezier(0.0, 0.0, 0.2, 1)</code>: 平滑的缓出效果，如精密铰链般优雅减速。避免线性或弹跳缓动，它们显得廉价且机械。</p>
       </div><div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Reduced Motion</span><span data-lang-cn="">减弱动效</span></span>
         <p class="body-copy" data-lang-en="">All animations must respect <code>prefers-reduced-motion: reduce</code>. Disable decorative motion, reduce transitions to instantaneous, ensure no content hides behind animation-gated reveals. This is a WCAG 2.2 requirement and a non-negotiable brand standard.</p>
@@ -464,25 +406,25 @@
 <section class="guide-section mb-16 reveal" id="s9">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 09</span><span data-lang-cn="">第九章</span></span>
       <h2 class="section-title"><span data-lang-en="">Spacing &amp; Grid</span><span data-lang-cn="">间距与网格</span></h2>
-      <p class="section-intro" data-lang-en="">VERTU's spatial system is built on an 8px base unit. Generous whitespace is a hallmark of luxury — it signals care, intentionality, and editorial restraint. Density is the enemy of refinement.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 的空间系统基于 8px 基础单位构建。充裕的留白是奢华的标志 — 它传达用心、意图与编辑克制。密度是精致的敌人。</p></div>
+      <p class="section-intro" data-lang-en="">VERTU’s spatial system is built on an 8px base unit. Generous whitespace is more than good design: it is a declaration of freedom, an insistence that content deserves room to breathe and the eye deserves permission to rest. In a landscape that crams every pixel with demand, VERTU’s restraint is its most radical statement.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 的空间系统基于 8px 基础单位构建。充裕的留白不仅是好的设计: 它是自由的宣言，是对内容“应有呼吸空间”与视觉“应被允许休憩”的坚持。在一个每个像素都塞满索取的界面中，VERTU 的克制是其最激进的宣言。</p></div>
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Spacing Scale</span><span data-lang-cn="">间距比例</span></span>
         <div class="spacing-scale">
-          <div class="spacing-row"><span class="spacing-label">4px</span><div class="spacing-bar spacing-bar-4"></div><span class="spacing-value" data-i18n-text="spacingMicro">Micro — tight label gaps</span></div>
-          <div class="spacing-row"><span class="spacing-label">8px</span><div class="spacing-bar spacing-bar-8"></div><span class="spacing-value" data-i18n-text="spacingBaseUnit">Base unit — icon padding</span></div>
-          <div class="spacing-row"><span class="spacing-label">16px</span><div class="spacing-bar spacing-bar-16"></div><span class="spacing-value" data-i18n-text="spacingSmall">Small — card internal padding</span></div>
-          <div class="spacing-row"><span class="spacing-label">24px</span><div class="spacing-bar spacing-bar-24"></div><span class="spacing-value" data-i18n-text="spacingMedium">Medium — section sub-gaps</span></div>
-          <div class="spacing-row"><span class="spacing-label">48px</span><div class="spacing-bar spacing-bar-48"></div><span class="spacing-value" data-i18n-text="spacingLarge">Large — between subsections</span></div>
-          <div class="spacing-row"><span class="spacing-label">96px</span><div class="spacing-bar spacing-bar-96"></div><span class="spacing-value" data-i18n-text="spacingXL">XL — section padding</span></div>
-          <div class="spacing-row"><span class="spacing-label">160px</span><div class="spacing-bar spacing-bar-160"></div><span class="spacing-value" data-i18n-text="spacingXXL">XXL — hero/section padding (brand page)</span></div>
+          <div class="spacing-row"><span class="spacing-label">4px</span><div class="spacing-bar spacing-bar-4"></div><span class="spacing-value" data-i18n-text="spacingMicro">Micro: tight label gaps</span></div>
+          <div class="spacing-row"><span class="spacing-label">8px</span><div class="spacing-bar spacing-bar-8"></div><span class="spacing-value" data-i18n-text="spacingBaseUnit">Base unit: icon padding</span></div>
+          <div class="spacing-row"><span class="spacing-label">16px</span><div class="spacing-bar spacing-bar-16"></div><span class="spacing-value" data-i18n-text="spacingSmall">Small: card internal padding</span></div>
+          <div class="spacing-row"><span class="spacing-label">24px</span><div class="spacing-bar spacing-bar-24"></div><span class="spacing-value" data-i18n-text="spacingMedium">Medium: section sub-gaps</span></div>
+          <div class="spacing-row"><span class="spacing-label">48px</span><div class="spacing-bar spacing-bar-48"></div><span class="spacing-value" data-i18n-text="spacingLarge">Large: between subsections</span></div>
+          <div class="spacing-row"><span class="spacing-label">96px</span><div class="spacing-bar spacing-bar-96"></div><span class="spacing-value" data-i18n-text="spacingXL">XL: section padding</span></div>
+          <div class="spacing-row"><span class="spacing-label">160px</span><div class="spacing-bar spacing-bar-160"></div><span class="spacing-value" data-i18n-text="spacingXXL">XXL: hero/section padding (brand page)</span></div>
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Grid</span><span data-lang-cn="">网格系统</span></span>
-        <p class="body-copy" data-lang-en="">Digital layouts use a 12-column grid with 24px gutters on a 1320px max container. Mobile collapses to a single column with 20px edge margins. Key principle: content should never touch the edges of its container — always maintain at least 1 column of breathing room on each side at desktop.</p>
-        <p class="body-copy" data-lang-cn="">数字布局采用12列网格，24px 列间距，最大容器宽度 1320px。移动端折叠为单列，边缘留白 20px。核心原则：内容绝不应触及容器边缘 — 桌面端两侧始终保持至少1列的呼吸空间。</p>
+        <p class="body-copy" data-lang-en="">Digital layouts use a 12-column grid with 24px gutters on a 1320px max container. Mobile collapses to a single column with 20px edge margins. Key principle: content should never touch the edges of its container: always maintain at least 1 column of breathing room on each side at desktop.</p>
+        <p class="body-copy" data-lang-cn="">数字布局采用12列网格，24px 列间距，最大容器宽度 1320px。移动端折叠为单列，边缘留白 20px。核心原则：内容绝不应触及容器边缘: 桌面端两侧始终保持至少1列的呼吸空间。</p>
       
     <div class="grid-visualizer mt-10 mb-4">
       <div class="grid-col"></div><div class="grid-col"></div><div class="grid-col"></div>
@@ -503,11 +445,11 @@
         
       <div class="glass-panel mt-8 w-full max-w-2xl mx-auto">
     <div class="flex flex-col items-center gap-2">
-      <span class="comp-label mb-2" data-i18n-text="componentOutlinedPrimaryLabel">Outlined — Primary</span>
+      <span class="comp-label mb-2" data-i18n-text="componentOutlinedPrimaryLabel">Outlined: Primary</span>
       <button class="vertu-btn" type="button" data-i18n-text="componentExploreCollection">Explore Collection</button>
     </div>
     <div class="flex flex-col items-center gap-2 mt-4">
-      <span class="comp-label mb-2" data-i18n-text="componentFilledCtaLabel">Filled — CTA</span>
+      <span class="comp-label mb-2" data-i18n-text="componentFilledCtaLabel">Filled: CTA</span>
       <button class="vertu-btn vertu-btn--filled" type="button" data-i18n-text="componentAddToBag">Add to Bag</button>
     </div>
   </div>
@@ -520,12 +462,12 @@
 <section class="guide-section mb-16 reveal" id="s11">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 11</span><span data-lang-cn="">第十一章</span></span>
       <h2 class="section-title"><span data-lang-en="">Accessibility Standards</span><span data-lang-cn="">无障碍标准</span></h2>
-      <p class="section-intro" data-lang-en="">Luxury is inclusive. All VERTU digital properties must meet WCAG 2.2 Level AA. Accessibility is craftsmanship — it is never an afterthought.</p>
-      <p class="section-intro" data-lang-cn="">奢华是包容的。所有 VERTU 数字产品须达到 WCAG 2.2 AA 级标准。无障碍即是工艺 — 绝非事后补救。</p></div>
+      <p class="section-intro" data-lang-en="">True luxury excludes no one. Access to beauty, clarity, and considered design is itself a form of freedom. All VERTU digital properties must meet WCAG 2.2 Level AA: not as compliance, but as craft. Accessibility is the quiet proof that we mean everything we say about care and intentionality.</p>
+      <p class="section-intro" data-lang-cn="">真正的奢华不排斥任何人。获得美、清晰与用心设计的权利，本身就是一种自由。所有 VERTU 数字产品须达到 WCAG 2.2 AA 级标准: 不是为了合规，而是作为工艺。无障碍是我们对「用心」与「意图」的无声明证。</p></div>
       
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Contrast Ratios — Dark Mode (verified)</span><span data-lang-cn="">对比度 — 深色模式（已验证）</span></span>
+        <span class="sub-label"><span data-lang-en="">Contrast Ratios: Dark Mode (verified)</span><span data-lang-cn="">对比度: 深色模式（已验证）</span></span>
         <div class="contrast-table-wrapper"><table class="contrast-table">
           <thead><tr><th scope="col" data-i18n-text="accessibilityForeground">Foreground</th><th scope="col" data-i18n-text="accessibilityBackground">Background</th><th scope="col" data-i18n-text="accessibilityRatio">Ratio</th><th scope="col" data-i18n-text="accessibilitySample">Sample</th><th scope="col" data-i18n-text="accessibilityAa">AA</th><th scope="col" data-i18n-text="accessibilityAaa">AAA</th></tr></thead>
           <tbody>
@@ -558,8 +500,8 @@
 <section class="guide-section mb-16 reveal" id="s12">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 12</span><span data-lang-cn="">第十二章</span></span>
       <h2 class="section-title"><span data-lang-en="">Usage Guidelines</span><span data-lang-cn="">使用规范</span></h2>
-      <p class="section-intro" data-lang-en="">The VERTU brand is a living system — powerful when applied with precision, fragile when handled carelessly. These rules protect the brand's integrity across all touchpoints.</p>
-      <p class="section-intro" data-lang-cn="">VERTU 品牌是一个活的系统 — 精准运用则强大有力，草率对待则脆弱不堪。以下规则保障品牌在所有触点的完整性。</p></div>
+      <p class="section-intro" data-lang-en="">The VERTU brand is a living system: powerful when applied with deliberate care, diminished when treated as disposable decoration. These rules exist not to restrict creativity, but to protect something rarer: a coherent identity that stands apart from the visual noise of the age. Consistency is our quiet form of defiance.</p>
+      <p class="section-intro" data-lang-cn="">VERTU 品牌是一个活的系统: 用心运用则强大有力，当作一次性装饰则黏然失色。这些规则的存在不是为了限制创意，而是为了守护更珍贵的东西：一个在时代视觉喧杂中卓然独立的统一身份。一致性，是我们无声的反叛。</p></div>
       
       
       
@@ -573,8 +515,8 @@
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Colour</span><span data-lang-cn="">色彩</span></span>
         <div class="guidelines-grid">
-          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">VERTU Black dominates. Gold accents selectively — headlines, labels, CTAs. Generous negative space lets the palette breathe.</p><p class="guideline-text" data-lang-cn="">VERTU 黑色主导。金色仅点缀性使用 — 标题、标签、行动按钮。充裕的负空间让色彩呼吸。</p></div>
-          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">Flood layouts with gold. Never use bright white (#FFF) as primary background — use Cream or Ivory. No neon or saturated accent colours.</p><p class="guideline-text" data-lang-cn="">布局中金色泛滥。绝不以亮白色（#FFF）作为主要背景 — 使用奶油色或象牙色。禁止霓虹或高饱和点缀色。</p></div>
+          <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Do</span><span data-lang-cn="">正确</span></span><p class="guideline-text" data-lang-en="">VERTU Black dominates. Gold accents selectively: headlines, labels, CTAs. Generous negative space lets the palette breathe.</p><p class="guideline-text" data-lang-cn="">VERTU 黑色主导。金色仅点缀性使用: 标题、标签、行动按钮。充裕的负空间让色彩呼吸。</p></div>
+          <div class="guideline-card dont"><span class="guideline-tag"><span data-lang-en="">Don't</span><span data-lang-cn="">避免</span></span><p class="guideline-text" data-lang-en="">Flood layouts with gold. Never use bright white (#FFF) as primary background: use Cream or Ivory. No neon or saturated accent colours.</p><p class="guideline-text" data-lang-cn="">布局中金色泛滥。绝不以亮白色（#FFF）作为主要背景: 使用奶油色或象牙色。禁止霓虹或高饱和点缀色。</p></div>
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Typography</span><span data-lang-cn="">字体排版</span></span>
@@ -607,7 +549,7 @@
         <div class="img-specs-grid">
           <div class="img-spec-card">
             <div class="img-spec-icon">WEB</div>
-            <div class="img-spec-title">Web — Hero &amp; Banner</div>
+            <div class="img-spec-title">Web: Hero &amp; Banner</div>
             <div class="img-spec-detail">Format: WebP (fallback JPEG)<br>Resolution: 2560×1440 @2x<br>Max file: 250KB (hero), 120KB (card)<br>Quality: 82–88% JPEG / 80% WebP<br>Colour profile: sRGB</div>
           </div>
           <div class="img-spec-card">
@@ -638,7 +580,7 @@
           <div class="aspect-box aspect-cinematic"><span>21:9 Cinematic</span></div>
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-12 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Art Direction — Do's &amp; Don'ts</span><span data-lang-cn="">美术指导 — 规范示例</span></span>
+        <span class="sub-label"><span data-lang-en="">Art Direction: Do's &amp; Don'ts</span><span data-lang-cn="">美术指导: 规范示例</span></span>
         <div class="crop-examples">
           <div class="crop-card good"><img src="./assets/images/agent-q-alligator-collectors-edition.webp" data-i18n-alt="cropCorrectDarkAlt" alt="Correct crop on dark background" loading="lazy" width="768" height="768"><span class="crop-card-tag" data-i18n-text="cropGood"></span></div>
           <div class="crop-card good"><img src="./assets/images/quantum-flip-baqua-gilded-lacquer-gold-v.webp" data-i18n-alt="cropCorrectMaterialAlt" alt="Correct material texture crop" loading="lazy" width="768" height="768"><span class="crop-card-tag" data-i18n-text="cropGood"></span></div>
@@ -650,8 +592,8 @@
         </div>
       </div><div class="reveal reveal-d4 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Colour Treatment</span><span data-lang-cn="">色彩处理</span></span>
-        <p class="body-copy" data-lang-en="">All product imagery must maintain consistent colour grading: slightly warm shadows (never blue/cool), highlights that are cream-white not pure white, and mid-tones that preserve the natural colour of materials — gold must read as gold, not yellow. Apply a subtle grain overlay (0.5–2% noise) for tactile quality.</p>
-        <p class="body-copy" data-lang-cn="">所有产品图片须保持一致的色彩分级：暗部略偏暖（绝不偏蓝/冷），高光呈奶白而非纯白，中间调保留材料本色 — 金色必须呈现为金色而非黄色。添加细微颗粒叠加（0.5–2% 噪点）以增强触感。</p>
+        <p class="body-copy" data-lang-en="">All product imagery must maintain consistent colour grading: slightly warm shadows (never blue/cool), highlights that are cream-white not pure white, and mid-tones that preserve the natural colour of materials: gold must read as gold, not yellow. Apply a subtle grain overlay (0.5–2% noise) for tactile quality.</p>
+        <p class="body-copy" data-lang-cn="">所有产品图片须保持一致的色彩分级：暗部略偏暖（绝不偏蓝/冷），高光呈奶白而非纯白，中间调保留材料本色: 金色必须呈现为金色而非黄色。添加细微颗粒叠加（0.5–2% 噪点）以增强触感。</p>
       </div></div></section>
 <section class="guide-section mb-16 reveal" id="s14">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 14</span><span data-lang-cn="">第十四章</span></span>
@@ -669,10 +611,10 @@
 
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">CSS — Design Tokens</span><span data-lang-cn="">CSS — 设计令牌</span></span>
+        <span class="sub-label"><span data-lang-en="">CSS: Design Tokens</span><span data-lang-cn="">CSS: 设计令牌</span></span>
         <div class="mockup-code w-full shadow-lg">
           <div class="code-header"><span class="code-lang">CSS Custom Properties</span><button class="code-copy-btn" data-i18n-text="copyReady" data-i18n-aria="copyCodeLabel"></button></div>
-          <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ck">/* VERTU Design Tokens — v4.0 */</span>
+          <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ck">/* VERTU Design Tokens: v4.0 */</span>
 <span class="ct">:root</span> {
   <span class="ck">/* Primary Palette */</span>
   <span class="cp">--vertu-black</span>: <span class="cv">#080808</span>;
@@ -710,7 +652,7 @@
 }</pre></div>
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">CSS — Button Component</span><span data-lang-cn="">CSS — 按钮组件</span></span>
+        <span class="sub-label"><span data-lang-en="">CSS: Button Component</span><span data-lang-cn="">CSS: 按钮组件</span></span>
         <div class="mockup-code w-full shadow-lg">
           <div class="code-header"><span class="code-lang">CSS</span><button class="code-copy-btn" data-i18n-text="copyReady" data-i18n-aria="copyCodeLabel"></button></div>
           <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ct">.vertu-btn</span> {
@@ -745,10 +687,10 @@
 }</pre></div>
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">CSS — Scroll Reveal Animation</span><span data-lang-cn="">CSS — 滚动显现动画</span></span>
+        <span class="sub-label"><span data-lang-en="">CSS: Scroll Reveal Animation</span><span data-lang-cn="">CSS: 滚动显现动画</span></span>
         <div class="mockup-code w-full shadow-lg">
           <div class="code-header"><span class="code-lang">CSS + JavaScript</span><button class="code-copy-btn" data-i18n-text="copyReady" data-i18n-aria="copyCodeLabel"></button></div>
-          <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ck">/* CSS — Scroll Reveal */</span>
+          <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ck">/* CSS: Scroll Reveal */</span>
 <span class="ct">.reveal</span> {
   <span class="cp">opacity</span>: <span class="cv">0</span>;
   <span class="cp">transform</span>: <span class="cv">translateY(32px)</span>;
@@ -770,7 +712,7 @@
   <span class="ct">.reveal</span> { <span class="cp">opacity</span>: <span class="cv">1</span>; <span class="cp">transform</span>: <span class="cv">none</span>; <span class="cp">transition</span>: <span class="cv">none</span>; }
 }
 
-<span class="ck">// JavaScript — IntersectionObserver</span>
+<span class="ck">// JavaScript: IntersectionObserver</span>
 const observer = new IntersectionObserver(
   (entries) =&gt; {
     entries.forEach(entry =&gt; {
@@ -787,7 +729,7 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
   .forEach(el =&gt; observer.observe(el));</pre></div>
         </div>
       </div><div class="reveal reveal-d4 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">HTML — Page Skeleton</span><span data-lang-cn="">HTML — 页面骨架</span></span>
+        <span class="sub-label"><span data-lang-en="">HTML: Page Skeleton</span><span data-lang-cn="">HTML: 页面骨架</span></span>
         <div class="mockup-code w-full shadow-lg">
           <div class="code-header"><span class="code-lang">HTML</span><button class="code-copy-btn" data-i18n-text="copyReady" data-i18n-aria="copyCodeLabel"></button></div>
           <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ct">&lt;!DOCTYPE html&gt;</span>
@@ -796,10 +738,8 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
   <span class="ct">&lt;meta</span> charset=<span class="cs">"UTF-8"</span><span class="ct">&gt;</span>
   <span class="ct">&lt;meta</span> name=<span class="cs">"viewport"</span>
     content=<span class="cs">"width=device-width, initial-scale=1"</span><span class="ct">&gt;</span>
-  <span class="ck">&lt;!-- Local offline assets --&gt;</span>
-  <span class="ct">&lt;link</span> href=<span class="cs">"./styles/vendor/daisyui.css"</span>
-    rel=<span class="cs">"stylesheet"</span><span class="ct">&gt;</span>
-  <span class="ct">&lt;link</span> href=<span class="cs">"./styles/brand-guide.css"</span>
+  <span class="ck">&lt;!-- Built Tailwind CSS 4 + daisyUI 5 bundle, including guide overrides --&gt;</span>
+  <span class="ct">&lt;link</span> href=<span class="cs">"./assets/guide.css"</span>
     rel=<span class="cs">"stylesheet"</span><span class="ct">&gt;</span>
 <span class="ct">&lt;/head&gt;</span>
 <span class="ct">&lt;body&gt;</span>
@@ -826,7 +766,7 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
 <span class="ct">&lt;/html&gt;</span></pre></div>
         </div>
       </div><div class="reveal reveal-d5 bento-card bento-col-6 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">CSS — Typography System</span><span data-lang-cn="">CSS — 排版系统</span></span>
+        <span class="sub-label"><span data-lang-en="">CSS: Typography System</span><span data-lang-cn="">CSS: 排版系统</span></span>
         <div class="mockup-code w-full shadow-lg">
           <div class="code-header"><span class="code-lang">CSS</span><button class="code-copy-btn" data-i18n-text="copyReady" data-i18n-aria="copyCodeLabel"></button></div>
           <div class="code-body"><pre class="px-5 py-3 border-none" data-prefix="$"><span class="ck">/* VERTU Type Scale */</span>
@@ -935,39 +875,39 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
 <div class="reveal reveal-d1 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Logo Files</span><span data-lang-cn="">标志文件</span></span>
         <div class="download-grid">
-          <button type="button" class="download-card w-full text-left" id="dl-logo-black">
+          <button type="button" class="download-card w-full text-left" id="dl-logo-black" data-i18n-aria="downloadLogoBlackAria">
             <div class="download-icon">BK</div>
             <div class="download-preview light-preview"><img src="./VERTU-Logo-Black.png" data-i18n-alt="downloadLogoBlackAlt" alt="Downloadable black VERTU logo preview" width="800" height="265"></div>
-            <div class="download-name"><span data-lang-en="">Logo — Black</span><span data-lang-cn="">标志 — 黑色</span></div>
+            <div class="download-name"><span data-lang-en="">Logo: Black</span><span data-lang-cn="">标志: 黑色</span></div>
             <div class="download-meta">PNG · <span data-lang-en="">Transparent · Light BG</span><span data-lang-cn="">透明 · 浅色背景</span></div>
           </button>
-          <button type="button" class="download-card w-full text-left" id="dl-logo-white">
+          <button type="button" class="download-card w-full text-left" id="dl-logo-white" data-i18n-aria="downloadLogoWhiteAria">
             <div class="download-icon">WH</div>
             <div class="download-preview dark-preview"><img src="./VERTU-Logo-White.png" data-i18n-alt="downloadLogoWhiteAlt" alt="Downloadable white VERTU logo preview" width="800" height="265"></div>
-            <div class="download-name"><span data-lang-en="">Logo — White</span><span data-lang-cn="">标志 — 白色</span></div>
+            <div class="download-name"><span data-lang-en="">Logo: White</span><span data-lang-cn="">标志: 白色</span></div>
             <div class="download-meta">PNG · <span data-lang-en="">Transparent · Dark BG</span><span data-lang-cn="">透明 · 深色背景</span></div>
           </button>
-          <button type="button" class="download-card w-full text-left" id="dl-logo-gold">
+          <button type="button" class="download-card w-full text-left" id="dl-logo-gold" data-i18n-aria="downloadLogoGoldAria">
             <div class="download-icon">AU</div>
             <div class="download-preview gold-preview"><img src="./VERTU-Logo-Gold.png" data-i18n-alt="downloadLogoGoldAlt" alt="Downloadable gold VERTU logo preview" width="800" height="265"></div>
-            <div class="download-name"><span data-lang-en="">Logo — Gold</span><span data-lang-cn="">标志 — 金色</span></div>
+            <div class="download-name"><span data-lang-en="">Logo: Gold</span><span data-lang-cn="">标志: 金色</span></div>
             <div class="download-meta">PNG · <span data-lang-en="">Transparent · Dark BG</span><span data-lang-cn="">透明 · 深色背景</span></div>
           </button>
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Templates</span><span data-lang-cn="">模板文件</span></span>
         <div class="download-grid">
-          <button type="button" class="download-card w-full text-left" id="dl-pptx">
+          <button type="button" class="download-card w-full text-left" id="dl-pptx" data-i18n-aria="downloadPptxAria">
             <div class="download-icon">.pptx</div>
             <div class="download-name"><span data-lang-en="">Presentation Template</span><span data-lang-cn="">演示文稿模板</span></div>
             <div class="download-meta"><span data-lang-en="">9 slides · Gold masters · 16:9</span><span data-lang-cn="">9页幻灯片 · 金色母版 · 16:9</span></div>
           </button>
-          <button type="button" class="download-card w-full text-left" id="dl-docx">
+          <button type="button" class="download-card w-full text-left" id="dl-docx" data-i18n-aria="downloadDocxAria">
             <div class="download-icon">.docx</div>
             <div class="download-name"><span data-lang-en="">Letterhead Template</span><span data-lang-cn="">信纸模板</span></div>
             <div class="download-meta"><span data-lang-en="">Premium · Gold borders · US Letter</span><span data-lang-cn="">精品版 · 金色边框 · US Letter</span></div>
           </button>
-          <button type="button" class="download-card w-full text-left" id="dl-guide">
+          <button type="button" class="download-card w-full text-left" id="dl-guide" data-i18n-aria="downloadGuideAria">
             <div class="download-icon">.html</div>
             <div class="download-name"><span data-lang-en="">This Brand Guide</span><span data-lang-cn="">本品牌指南</span></div>
             <div class="download-meta"><span data-lang-en="">Interactive · EN/中文 · Offline</span><span data-lang-cn="">交互式 · 中英双语 · 离线可用</span></div>
@@ -975,7 +915,7 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-12 flex flex-col">
         <span class="sub-label mb-2 block text-v-titanium tracking-widest text-xs uppercase"><span data-lang-en="">Social Media Templates</span><span data-lang-cn="">社交媒体模板</span></span>
-        <p class="body-copy text-sm text-v-titanium mb-6" data-lang-en="">Generate on-brand social media assets for Instagram, LinkedIn, and X/Twitter. Configure format, theme, and headline — then export a high-resolution PNG.</p>
+        <p class="body-copy text-sm text-v-titanium mb-6" data-lang-en="">Generate on-brand social media assets for Instagram, LinkedIn, and X/Twitter. Configure format, theme, and headline: then export a high-resolution PNG.</p>
         <p class="body-copy text-sm text-v-titanium mb-6" data-lang-cn="">生成符合品牌规范的社交媒体资产，适用于 Instagram、LinkedIn 和 X/Twitter。配置格式、主题及标语，导出高分辨率 PNG。</p>
 
         <div class="flex flex-col xl:flex-row gap-8 w-full mb-8">
@@ -994,9 +934,9 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
             <div class="form-control w-full">
               <label for="social-theme" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Theme</span><span data-lang-cn="">主题</span></span></label>
               <select id="social-theme" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
-                <option value="dark"><span data-lang-en="">Dark — Black + Gold</span></option>
-                <option value="light"><span data-lang-en="">Light — Ivory + Gold</span></option>
-                <option value="gold"><span data-lang-en="">Gold — Gold + Black</span></option>
+                <option value="dark"><span data-lang-en="">Dark: Black + Gold</span></option>
+                <option value="light"><span data-lang-en="">Light: Ivory + Gold</span></option>
+                <option value="gold"><span data-lang-en="">Gold: Gold + Black</span></option>
               </select>
             </div>
 
@@ -1021,28 +961,28 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
         </div>
 
         <!-- Preset quick-download cards -->
-        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-en="">Quick Export — Dark Theme</p>
-        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-cn="">快速导出 — 深色主题</p>
+        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-en="">Quick Export: Dark Theme</p>
+        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-cn="">快速导出: 深色主题</p>
         <div class="download-grid">
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-post" data-theme="dark">
+          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-post" data-theme="dark" data-i18n-aria="socialPresetIgPostDarkAria">
             <div class="download-icon">IG</div>
             <div class="download-name"><span data-lang-en="">Instagram Post</span><span data-lang-cn="">Instagram 帖子</span></div>
-            <div class="download-meta">PNG · 1080×1080 · Dark</div>
+            <div class="download-meta" data-i18n-text="socialPresetIgPostDarkMeta">PNG · 1080×1080 · Dark</div>
           </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-story" data-theme="dark">
+          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-story" data-theme="dark" data-i18n-aria="socialPresetIgStoryDarkAria">
             <div class="download-icon">IS</div>
             <div class="download-name"><span data-lang-en="">Instagram Story</span><span data-lang-cn="">Instagram 限时动态</span></div>
-            <div class="download-meta">PNG · 1080×1920 · Dark</div>
+            <div class="download-meta" data-i18n-text="socialPresetIgStoryDarkMeta">PNG · 1080×1920 · Dark</div>
           </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="linkedin" data-theme="dark">
+          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="linkedin" data-theme="dark" data-i18n-aria="socialPresetLinkedinDarkAria">
             <div class="download-icon">LI</div>
             <div class="download-name"><span data-lang-en="">LinkedIn Post</span><span data-lang-cn="">LinkedIn 帖子</span></div>
-            <div class="download-meta">PNG · 1200×627 · Dark</div>
+            <div class="download-meta" data-i18n-text="socialPresetLinkedinDarkMeta">PNG · 1200×627 · Dark</div>
           </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="x-header" data-theme="dark">
+          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="x-header" data-theme="dark" data-i18n-aria="socialPresetXHeaderDarkAria">
             <div class="download-icon">XH</div>
             <div class="download-name"><span data-lang-en="">X / Twitter Header</span><span data-lang-cn="">X / Twitter 封面</span></div>
-            <div class="download-meta">PNG · 1500×500 · Dark</div>
+            <div class="download-meta" data-i18n-text="socialPresetXHeaderDarkMeta">PNG · 1500×500 · Dark</div>
           </button>
         </div>
       </div><div class="reveal reveal-d4 bento-card bento-col-12 flex flex-col">
@@ -1053,14 +993,14 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
     <section class="guide-section mb-16 reveal" id="s16">
       <div class="reveal"><span class="section-num"><span data-lang-en="">Section 16</span><span data-lang-cn="">第十六章</span></span>
       <h2 class="section-title"><span data-lang-en="">Agentic AI &amp; LLM Guidelines</span><span data-lang-cn="">AI智能体与大模型规范</span></h2>
-      <p class="section-intro" data-lang-en="">Instructions and context crumps specifically engineered for AI Coding Agents, LLMs, and automated refactoring tools working within the VERTU codebase.</p>
-      <p class="section-intro" data-lang-cn="">专为在 VERTU 代码库中工作的 AI 编程智能体、大模型及自动化重构工具制定的指令与上下文片段。</p></div>
+      <p class="section-intro" data-lang-en="">At VERTU, artificial intelligence exists to serve one purpose: returning sovereignty to the individual. Our AI agents do not surveil: they anticipate. They do not distract: they protect your attention. They do not replace human judgment: they amplify it. This section provides operational guidance for coding agents working in the VERTU repository, ensuring that every intelligent system we build embodies these principles. The implementation is SSR-first with Elysia, HTMX-driven, and progressively enhanced for clipboard, focus management, and canvas exports.</p>
+      <p class="section-intro" data-lang-cn="">在 VERTU，人工智能只为一个目的而存在：将主权归还于个人。我们的 AI 智能体不监控: 它们预见。它们不分散注意力: 它们守护你的专注。它们不取代人的判断: 它们放大它。本章节为在 VERTU 代码库中协作的编码智能体提供执行规范，确保我们构建的每一个智能系统都体现这些原则。实现以 Elysia 服务端渲染为核心，由 HTMX 驱动，并对剪贴板、焦点管理与画布导出进行渐进增强。</p></div>
 
       <div class="bento-grid mt-12">
         <div class="reveal reveal-d1 bento-card bento-col-12 flex flex-col">
-          <span class="sub-label mb-2 block text-v-titanium tracking-widest text-xs uppercase"><span data-lang-en="">System Prompt Crumbs</span><span data-lang-cn="">系统提示词</span></span>
-          <p class="body-copy text-sm text-v-titanium mb-6" data-lang-en="">When using context-aware tools like Cursor, GitHub Copilot, or Gemini CLI, ensure the following constraints are embedded in the system prompt (.cursorrules or GEMINI.md).</p>
-          <p class="body-copy text-sm text-v-titanium mb-6" data-lang-cn="">使用 Cursor、GitHub Copilot 或 Gemini CLI 等上下文感知工具时，请确保将以下约束嵌入系统提示词（.cursorrules 或 GEMINI.md）。</p>
+          <span class="sub-label mb-2 block text-v-titanium tracking-widest text-xs uppercase"><span data-lang-en="">Agent Contract</span><span data-lang-cn="">智能体契约</span></span>
+          <p class="body-copy text-sm text-v-titanium mb-6" data-lang-en="">When using Cursor, Codex, or any refactoring assistant, keep these repository rules in the active instruction set so new work stays aligned with the server-driven architecture.</p>
+          <p class="body-copy text-sm text-v-titanium mb-6" data-lang-cn="">在使用 Cursor、Codex 或任意重构助手时，请将以下仓库规则放入当前指令集中，以确保新增改动持续遵循服务端驱动架构。</p>
           
           <div class="mockup-code w-full shadow-lg">
             <div class="code-header border-b border-base-content/10 pb-2 mb-2 px-4 pt-2">
@@ -1069,11 +1009,15 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
             <div class="px-5 py-4 font-mono text-xs leading-relaxed text-base-content/60 whitespace-pre-wrap">
 <span class="text-base-content font-semibold"># VERTU AI Coding Mandates</span>
 
-1. <span class="text-base-content">Strict Typing:</span> No `any`, `unknown`, or `@ts-ignore`. Use precise interfaces.
-2. <span class="text-base-content">Zero Technical Debt:</span> Do not leave TODOs or shims. Fix legacy patterns immediately.
-3. <span class="text-base-content">DaisyUI 5 + Tailwind:</span> Use semantic DaisyUI classes (`btn`, `card`, `bento-grid`). Avoid inline arbitrary values unless strictly necessary for luxury spacing.
-4. <span class="text-base-content">No Try/Catch:</span> Use discriminated unions (`Result&lt;T, E&gt;`) or framework boundaries.
-5. <span class="text-base-content">i18n Enforced:</span> Every new string must be added to the bilingual dictionary and toggle dynamically. No hardcoded English-only strings.
+1. <span class="text-base-content">SSR First:</span> Route and fragment state belongs to Elysia. Use HTMX swaps for section, language, and theme changes before adding client state.
+2. <span class="text-base-content">Strict Types:</span> New server, client, and test modules live in TypeScript with strict mode enabled.
+3. <span class="text-base-content">Structured Logging:</span> Use JSON log events via shared logging helpers. Do not add <code>console.*</code> calls.
+4. <span class="text-base-content">No Try/Catch Control Flow:</span> Prefer explicit state validation, HTTP status envelopes, and DOM capability checks.
+5. <span class="text-base-content">i18n Enforced:</span> New UI strings must land in the shared bilingual copy map and render safely for EN, 中文, and bilingual modes.
+6. <span class="text-base-content">Accessible by Default:</span> Interactive controls must ship with explicit server-rendered accessible names before any browser enhancement runs.
+7. <span class="text-base-content">History Safe:</span> If HTMX pushes a URL, the server must vary on HTMX headers and return a full document for history restoration misses.
+8. <span class="text-base-content">Build-Time Content Pipeline:</span> Section localization, ARIA normalization, and navigation metadata belong to the build output, not request-time regex passes.
+9. <span class="text-base-content">Single Shell Contract:</span> Shared DOM ids, selectors, and HTMX request semantics belong in one typed module used by the server shell, browser layer, tests, and audit.
             </div>
           </div>
         </div>
@@ -1083,24 +1027,24 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
           <div class="flex flex-col gap-4 mt-2">
             <div class="bg-base-300/50 p-4 rounded border border-base-content/5">
               <h3 class="text-v-gold font-mono text-xs mb-1"><span data-lang-en="">Architecture</span><span data-lang-cn="">架构</span></h3>
-              <p class="text-sm text-v-titanium" data-lang-en="">Always prefer framework-native features over third-party npm packages. E.g., Use native <code class="bg-base-content/10 px-1 rounded">Intl</code> over heavy i18n libraries.</p>
-              <p class="text-sm text-v-titanium" data-lang-cn="">始终优先使用框架原生功能而非第三方 npm 包。例如，使用原生 <code class="bg-base-content/10 px-1 rounded">Intl</code> 代替臃肿的国际化库。</p>
+              <p class="text-sm text-v-titanium" data-lang-en="">Prefer typed server modules under <code class="bg-base-content/10 px-1 rounded">src/server</code> and keep the browser layer in <code class="bg-base-content/10 px-1 rounded">src/client</code> limited to progressive enhancement.</p>
+              <p class="text-sm text-v-titanium" data-lang-cn="">优先扩展 <code class="bg-base-content/10 px-1 rounded">src/server</code> 中的类型化服务端模块，并将 <code class="bg-base-content/10 px-1 rounded">src/client</code> 中的浏览器层限定为渐进增强。</p>
             </div>
             <div class="bg-base-300/50 p-4 rounded border border-base-content/5">
-              <h3 class="text-v-gold font-mono text-xs mb-1"><span data-lang-en="">UI Components</span><span data-lang-cn="">UI 组件</span></h3>
-              <p class="text-sm text-v-titanium" data-lang-en="">Do not invent new buttons or cards. Re-use <code class="bg-base-content/10 px-1 rounded">.vertu-btn</code>, <code class="bg-base-content/10 px-1 rounded">.bento-card</code>, and CSS variables defined in <code class="bg-base-content/10 px-1 rounded">styles/brand-guide.css</code>.</p>
-              <p class="text-sm text-v-titanium" data-lang-cn="">请勿创建新的按钮或卡片组件。请复用 <code class="bg-base-content/10 px-1 rounded">.vertu-btn</code>、<code class="bg-base-content/10 px-1 rounded">.bento-card</code>，以及 <code class="bg-base-content/10 px-1 rounded">styles/brand-guide.css</code> 中定义的 CSS 变量。</p>
+              <h3 class="text-v-gold font-mono text-xs mb-1"><span data-lang-en="">State Ownership</span><span data-lang-cn="">状态归属</span></h3>
+              <p class="text-sm text-v-titanium" data-lang-en="">Language, theme, and active section are URL-driven view state. If a flow can be restored from the server response, keep it out of ad-hoc browser storage.</p>
+              <p class="text-sm text-v-titanium" data-lang-cn="">语言、主题与当前章节均属于 URL 驱动的视图状态。只要服务端响应即可还原，就不要把它放入临时浏览器存储中。</p>
             </div>
           </div>
         </div>
 
         <div class="reveal reveal-d3 bento-card bento-col-6 flex flex-col">
           <span class="sub-label mb-2 block text-v-titanium tracking-widest text-xs uppercase"><span data-lang-en="">Automated Auditing</span><span data-lang-cn="">自动化审计</span></span>
-          <p class="text-sm text-v-titanium mb-4" data-lang-en="">Run the following command before finalizing any AI-generated PR to verify accessibility and language map integrity:</p>
-          <p class="text-sm text-v-titanium mb-4" data-lang-cn="">在提交任何 AI 生成的 PR 之前，请运行以下命令以验证无障碍性和语言映射的完整性：</p>
+          <p class="text-sm text-v-titanium mb-4" data-lang-en="">Run the following command before finalizing any AI-generated change to verify SSR rendering, accessibility labels, parity coverage, and the no-console / no-try-catch policy:</p>
+          <p class="text-sm text-v-titanium mb-4" data-lang-cn="">在提交任何 AI 生成的改动前，请运行以下命令以验证服务端渲染、无障碍标签、功能一致性，以及禁止 console 与 try/catch 的约束：</p>
           <div class="mockup-code text-xs">
-            <pre data-prefix="$"><code>bun run ./scripts/audit-brand-guide.mjs</code></pre>
-            <pre data-prefix=">" class="text-success"><code>[audit-brand-guide] PASS</code></pre>
+            <pre data-prefix="$"><code>bun run audit</code></pre>
+            <pre data-prefix=">" class="text-success"><code>{"component":"audit","level":"INFO","message":"Brand guide audit passed"}</code></pre>
           </div>
         </div>
       </div>
@@ -1178,14 +1122,8 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
       </div>
     </aside>
   </div>
-
-  <!-- Local PrismJS for code highlighting -->
-  <script src="./scripts/vendor/prism.min.js"></script>
-  <script src="./scripts/vendor/prism-css.min.js"></script>
-  <script src="./scripts/vendor/prism-javascript.min.js"></script>
-
-  <!-- External JS -->
-  <script src="./scripts/brand-guide.js"></script>
+  <!-- Compiled client bundle -->
+  <script src="./assets/guide.js" type="module"></script>
 
 
 
