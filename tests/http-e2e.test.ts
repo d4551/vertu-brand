@@ -81,6 +81,8 @@ describe("live HTTP smoke", () => {
     const guideDownloadResponse = await fetch(`${baseUrl}/downloads/vertu-brand-guide.html`, {
       method: "HEAD",
     });
+    const guideDownloadHtmlResponse = await fetch(`${baseUrl}/downloads/vertu-brand-guide.html`);
+    const guideDownloadHtml = await guideDownloadHtmlResponse.text();
     const assetHeadResponse = await fetch(`${baseUrl}/VERTU-Logo-Black.png`, { method: "HEAD" });
     const sourceFileResponse = await fetch(`${baseUrl}/README.md`, { method: "HEAD" });
     const authoringStylesheetResponse = await fetch(`${baseUrl}/styles/brand-guide.css`, { method: "HEAD" });
@@ -98,6 +100,9 @@ describe("live HTTP smoke", () => {
     expect(stylesheetBody).toContain("--color-v-gold");
     expect(guideDownloadResponse.status).toBe(200);
     expect(guideDownloadResponse.headers.get("content-disposition")).toContain("vertu-brand-guide.html");
+    expect(guideDownloadHtmlResponse.status).toBe(200);
+    expect(guideDownloadHtml).toContain(`id="${GUIDE_DOM_IDS.page}"`);
+    expect(guideDownloadHtml).not.toContain('id="navLangSelect"');
     expect(assetHeadResponse.status).toBe(200);
     expect(assetHeadResponse.headers.get("content-type")).toContain("image/png");
     expect(sourceFileResponse.status).toBe(404);

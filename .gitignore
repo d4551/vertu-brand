@@ -1,7 +1,44 @@
+# Dependencies
 node_modules/
-.DS_Store
-*.log
-.venv/
+
+# Build output
 .generated/
 .generated-next-*/
+dist/
+out/
+
+# Environment and secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Python virtual env (if used for tooling)
+.venv/
+
+# IDE and editor (uncomment if not shared)
+# .vscode/
+# .idea/
+.cursor/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Logs and diagnostics
+*.log
+npm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# TypeScript
+*.tsbuildinfo
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# Temp and cache
+.cache/
+.parcel-cache/
+
+# Project-specific
 preview_slide_*.png

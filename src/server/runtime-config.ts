@@ -15,6 +15,8 @@ export const GUIDE_PATHS = {
   downloadGuideHtmlSource: resolve(PROJECT_ROOT, "index.html"),
   projectRoot: PROJECT_ROOT,
   publicRoot: resolve(PROJECT_ROOT, ".generated/public"),
+  socialManifestOutputRoot: resolve(PROJECT_ROOT, ".generated/public/assets/social/manifests"),
+  socialPublicOutputRoot: resolve(PROJECT_ROOT, ".generated/public/assets/social"),
   sectionNavigationOutput: resolve(PROJECT_ROOT, ".generated/content/navigation.generated.ts"),
   sectionRegistryOutput: resolve(PROJECT_ROOT, ".generated/content/sections.generated.ts"),
   stylesheetEntry: resolve(PROJECT_ROOT, "src/client/styles/guide.css"),

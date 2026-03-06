@@ -1,17 +1,57 @@
 import { GUIDE_BRAND_ASSETS, GUIDE_ROUTES, HTMX_CONFIG } from "../../shared/config";
 import { GUIDE_HTMX, GUIDE_SELECTORS, GUIDE_DOM_IDS } from "../../shared/shell-contract";
-import { renderLocalizedSpans, resolveCopy, resolveToastCopy, type LocalizedCopy } from "../../shared/i18n";
-import { toGuideHref, type GuideViewState } from "../../shared/view-state";
+import {
+  renderLocalizedSpans,
+  renderVisibleCopy,
+  resolveCopy,
+  resolveLocaleCopy,
+  resolveToastCopy,
+  type LocalizedCopy,
+} from "../../shared/i18n";
+import {
+  nextGuideLanguage,
+  nextGuideTheme,
+  type GuideViewState,
+} from "../../shared/view-state";
+import {
+  resolveGuideSocialQueryValues,
+  resolveSectionSocialPreset,
+  resolveSocialThemeFromGuideTheme,
+  SOCIAL_PRESET_REGISTRY,
+  toSocialGuideHref,
+  toSocialAssetHref,
+} from "../../shared/social-toolkit";
+import { renderGuideSocialSectionMarkup, resolveGuideSocialPreviewRenderModel } from "../social-preview-markup";
 import { GUIDE_NAVIGATION, type GuideNavigationItem } from "../content/navigation";
 import { renderSectionMarkup } from "../content/source";
 
 /**
  * Renders the full SSR document for direct navigation.
  */
-export const renderDocument = (viewState: GuideViewState): string => {
-  const description = resolveCopy("guideDescription", viewState.language);
+export const renderDocument = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
+  const sectionTitle = GUIDE_NAVIGATION.find((item) => item.id === viewState.section)?.title[viewState.language === "zh" ? "zh" : "en"];
+  const description =
+    viewState.section === "s0"
+      ? resolveCopy("guideDescription", viewState.language)
+      : `${sectionTitle ?? resolveCopy("guideTitle", viewState.language)} · ${resolveCopy("guideDescription", viewState.language)}`;
   const htmxConfig = JSON.stringify(HTMX_CONFIG);
-  const title = `${resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`;
+  const title =
+    viewState.section === "s0"
+      ? `${resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`
+      : `${sectionTitle ?? resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`;
+  const socialPreset = resolveSectionSocialPreset(viewState.section);
+  const socialImageHref = toSocialAssetHref(
+    {
+      approvedAssetId: SOCIAL_PRESET_REGISTRY[socialPreset].approvedAssetId,
+      assetKind: "og-card",
+      language: viewState.language,
+      packId: socialPreset,
+      presetId: socialPreset,
+      section: viewState.section,
+      theme: resolveSocialThemeFromGuideTheme(viewState.theme),
+    },
+    requestOrigin
+  );
 
   return [
     "<!DOCTYPE html>",
@@ -24,13 +64,18 @@ export const renderDocument = (viewState: GuideViewState): string => {
     `  <meta property="og:title" content="${escapeAttribute(title)}">`,
     `  <meta property="og:description" content="${escapeAttribute(description)}">`,
     '  <meta property="og:type" content="website">',
+    `  <meta property="og:image" content="${escapeAttribute(socialImageHref)}">`,
+    '  <meta property="og:image:width" content="1200">',
+    '  <meta property="og:image:height" content="630">',
+    '  <meta name="twitter:card" content="summary_large_image">',
+    `  <meta name="twitter:image" content="${escapeAttribute(socialImageHref)}">`,
     `  <link rel="canonical" href="${GUIDE_ROUTES.guide}">`,
     `  <title>${escapeHtml(title)}</title>`,
     `  <link href="${GUIDE_ROUTES.stylesheet}" rel="stylesheet">`,
     `  <script src="${GUIDE_ROUTES.clientScript}" type="module" defer></script>`,
     "</head>",
     '<body class="bg-base-100 text-base-content antialiased min-h-screen relative w-full overflow-x-hidden">',
-    renderGuidePage(viewState),
+    renderGuidePage(viewState, requestOrigin, requestQuery),
     "</body>",
     "</html>",
   ].join("\n");
@@ -39,7 +84,7 @@ export const renderDocument = (viewState: GuideViewState): string => {
 /**
  * Renders the branded page wrapper for full-page HTMX swaps and direct SSR loads.
  */
-export const renderGuidePage = (viewState: GuideViewState): string => {
+export const renderGuidePage = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
   const skipLabel = resolveCopy("skipToMainContent", viewState.language);
 
   return `
@@ -90,14 +135,18 @@ export const renderGuidePage = (viewState: GuideViewState): string => {
   </div>
 
   ${renderGuideCover(viewState)}
-  ${renderGuideShell(viewState)}
+  ${renderGuideShell(viewState, requestOrigin, requestQuery)}
 </div>`;
 };
 
 /**
  * Renders the HTMX swap target shell for section navigation.
  */
-export const renderGuideShell = (viewState: GuideViewState): string => {
+export const renderGuideShell = (
+  viewState: GuideViewState,
+  requestOrigin: string,
+  requestQuery: URLSearchParams
+): string => {
   return `
 <div
   id="${GUIDE_DOM_IDS.shell}"
@@ -126,17 +175,19 @@ export const renderGuideShell = (viewState: GuideViewState): string => {
   <div class="drawer-content flex flex-col w-full relative" id="${GUIDE_DOM_IDS.mainContent}">
     <header class="navbar guide-topbar sticky top-0 z-50 lg:hidden">
       <div class="navbar-start min-w-0">
-        <button
+        <label
           id="${GUIDE_DOM_IDS.drawerOpenButton}"
-          type="button"
+          for="${GUIDE_DOM_IDS.drawerControl}"
           class="btn btn-square btn-ghost"
           aria-controls="${GUIDE_DOM_IDS.sidebarPanel}"
           aria-expanded="false"
           aria-label="${escapeAttribute(resolveCopy("openSidebar", viewState.language))}"
+          role="button"
+          tabindex="0"
         >
           <span class="sr-only">${escapeHtml(resolveCopy("openSidebar", viewState.language))}</span>
           ${renderMenuIcon()}
-        </button>
+        </label>
         <a
           href="${GUIDE_SELECTORS.cover}"
           class="guide-brandmark"
@@ -155,7 +206,7 @@ export const renderGuideShell = (viewState: GuideViewState): string => {
       }
 
       <div id="${GUIDE_DOM_IDS.sectionPanel}" class="guide-stage">
-        ${renderSectionMarkup(viewState.section, viewState.language)}
+        ${renderGuideSections(viewState, requestOrigin, requestQuery)}
       </div>
     </main>
   </div>
@@ -181,30 +232,31 @@ export const renderGuideShell = (viewState: GuideViewState): string => {
               zh: resolveCopy("guideTitle", "zh"),
             })}</p>
           </div>
-          <button
+          <label
             id="${GUIDE_DOM_IDS.drawerCloseButton}"
-            type="button"
+            for="${GUIDE_DOM_IDS.drawerControl}"
             class="btn btn-sm btn-square btn-ghost lg:hidden"
             aria-controls="${GUIDE_DOM_IDS.sidebarPanel}"
             aria-expanded="false"
             aria-label="${escapeAttribute(resolveCopy("closeSidebar", viewState.language))}"
+            role="button"
+            tabindex="0"
           >
             <span class="sr-only">${escapeHtml(resolveCopy("closeSidebar", viewState.language))}</span>
             ${renderCloseIcon()}
-          </button>
+          </label>
         </div>
         <p class="guide-sidebar-description">${renderLocalizedSpans({
           en: resolveCopy("guideDescription", "en"),
           zh: resolveCopy("guideDescription", "zh"),
         })}</p>
-        ${renderSidebarControls(viewState)}
+        ${renderSidebarControls(viewState, requestQuery)}
       </div>
 
       <nav
         id="${GUIDE_DOM_IDS.drawerNav}"
         class="guide-sidebar-nav"
         aria-label="${escapeAttribute(resolveCopy("sidebarNavigation", viewState.language))}"
-        hx-boost="${GUIDE_HTMX.boostEnabled}"
       >
         <ul class="menu guide-nav-list">
           ${GUIDE_NAVIGATION.map((item) => renderNavigationItem(item, viewState)).join("")}
@@ -223,7 +275,7 @@ const renderGuideCover = (viewState: GuideViewState): string => `
     <div class="guide-cover-body">
       <img
         class="cover-logo"
-        src="${resolveCoverLogoPath(viewState.theme)}"
+        src="${resolveCoverLogoPath(effectiveThemeForLogo(viewState.theme))}"
         alt=""
         aria-hidden="true"
         width="160"
@@ -256,74 +308,114 @@ const renderGuideCover = (viewState: GuideViewState): string => `
   </a>
 </header>`;
 
-const renderSidebarControls = (viewState: GuideViewState): string => {
-  const nextTheme = viewState.theme === "dark" ? "light" : "dark";
-  const themeHref = toGuideHref({ language: viewState.language, section: viewState.section, theme: nextTheme });
-  const themeLabel = resolveCopy("toggleTheme", viewState.language);
+const ICON_MOON =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="guide-theme-icon" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const ICON_SUN =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="guide-theme-icon" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+const ICON_SYSTEM =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="guide-theme-icon" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>';
+const renderThemeIcon = (theme: GuideViewState["theme"]): string =>
+  theme === "dark" ? ICON_MOON : theme === "light" ? ICON_SUN : ICON_SYSTEM;
 
-  const langButtons = (["en", "zh", "bi"] as const).map((lang) => {
-    const href = toGuideHref({ language: lang, section: viewState.section, theme: viewState.theme });
-    const isActive = viewState.language === lang;
-    const label = lang === "en" ? "🇬🇧" : lang === "zh" ? "🇨🇳" : "BI";
-    const ariaLabel = lang === "en"
-      ? resolveCopy("languageEnglish", viewState.language)
+const renderLanguageLabel = (lang: GuideViewState["language"], controlLocale: "en" | "zh"): string => {
+  const key =
+    lang === "en"
+      ? "languageEnglishShort"
       : lang === "zh"
+        ? "languageChineseShort"
+        : "languageBilingualShort";
+  return escapeHtml(resolveLocaleCopy(key, controlLocale));
+};
+
+const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearchParams): string => {
+  const socialQuery = resolveGuideSocialQueryValues(requestQuery);
+  const controlLocale = viewState.language === "zh" ? "zh" : "en";
+  const nextTheme = nextGuideTheme(viewState.theme);
+  const nextLang = nextGuideLanguage(viewState.language);
+
+  const themeCycleHref = toSocialGuideHref({
+    approvedAssetId: socialQuery.approvedAssetId,
+    assetKind: socialQuery.assetKind,
+    guideTheme: nextTheme,
+    language: viewState.language,
+    packId: socialQuery.packId,
+    section: viewState.section,
+    socialTheme: socialQuery.socialTheme,
+  });
+  const themeAriaLabel =
+    viewState.theme === "dark"
+      ? resolveCopy("themeDark", viewState.language)
+      : viewState.theme === "light"
+        ? resolveCopy("themeLight", viewState.language)
+        : resolveCopy("themeSystem", viewState.language);
+
+  const langCycleHref = toSocialGuideHref({
+    approvedAssetId: socialQuery.approvedAssetId,
+    assetKind: socialQuery.assetKind,
+    guideTheme: viewState.theme,
+    language: nextLang,
+    packId: socialQuery.packId,
+    section: viewState.section,
+    socialTheme: socialQuery.socialTheme,
+  });
+  const langAriaLabel =
+    viewState.language === "en"
+      ? resolveCopy("languageEnglish", viewState.language)
+      : viewState.language === "zh"
         ? resolveCopy("languageChinese", viewState.language)
         : resolveCopy("languageBilingual", viewState.language);
 
-    return `<a
-      href="${href}"
-      class="btn btn-sm join-item guide-lang-btn${isActive ? " btn-active" : ""}"
-      aria-label="${escapeAttribute(ariaLabel)}"
-      ${isActive ? 'aria-current="true"' : ""}
-      hx-get="${href}"
-      hx-target="${GUIDE_SELECTORS.page}"
-      hx-swap="${GUIDE_HTMX.pageSwap}"
-      hx-indicator="${GUIDE_HTMX.pageIndicator}"
-      hx-push-url="true"
-      hx-sync="${GUIDE_SELECTORS.page}:replace"
-    >${label}</a>`;
-  }).join("");
-
   return `
   <div class="guide-sidebar-controls">
-    <a
-      href="${themeHref}"
-      class="btn btn-sm btn-circle btn-ghost guide-theme-toggle"
-      aria-label="${escapeAttribute(themeLabel)}"
-      hx-get="${themeHref}"
-      hx-target="${GUIDE_SELECTORS.page}"
-      hx-swap="${GUIDE_HTMX.pageSwap}"
-      hx-indicator="${GUIDE_HTMX.pageIndicator}"
-      hx-push-url="true"
-      hx-sync="${GUIDE_SELECTORS.page}:replace"
-    >
-      ${viewState.theme === "dark" ? renderSunIcon() : renderMoonIcon()}
-    </a>
-    <div class="join guide-lang-group">
-      ${langButtons}
+    <div class="guide-control-field">
+      <p class="guide-control-label">${renderVisibleCopy("themeLabel", viewState.language)}</p>
+      <div class="guide-control-group guide-theme-group guide-theme-cycle" role="group" aria-label="${escapeAttribute(resolveCopy("toggleTheme", viewState.language))}">
+        <a
+          href="${themeCycleHref}"
+          class="btn btn-sm guide-control-btn guide-theme-cycle"
+          data-guide-theme="${viewState.theme}"
+          aria-label="${escapeAttribute(themeAriaLabel)}"
+          aria-current="true"
+          hx-get="${themeCycleHref}"
+          hx-target="${GUIDE_SELECTORS.page}"
+          hx-swap="${GUIDE_HTMX.pageSwap}"
+          hx-indicator="${GUIDE_HTMX.pageIndicator}"
+          hx-push-url="true"
+          hx-sync="${GUIDE_SELECTORS.page}:replace"
+        ><span class="guide-theme-icons">${renderThemeIcon(viewState.theme)}</span></a>
+      </div>
+    </div>
+    <div class="guide-control-field">
+      <p class="guide-control-label">${renderVisibleCopy("languageLabel", viewState.language)}</p>
+      <div class="guide-control-group guide-lang-group guide-lang-cycle" role="group" aria-label="${escapeAttribute(resolveCopy("languageSelectLabel", viewState.language))}">
+        <a
+          href="${langCycleHref}"
+          class="btn btn-sm guide-control-btn guide-lang-cycle"
+          data-guide-language="${viewState.language}"
+          aria-label="${escapeAttribute(langAriaLabel)}"
+          aria-current="true"
+          hx-get="${langCycleHref}"
+          hx-target="${GUIDE_SELECTORS.page}"
+          hx-swap="${GUIDE_HTMX.pageSwap}"
+          hx-indicator="${GUIDE_HTMX.pageIndicator}"
+          hx-push-url="true"
+          hx-sync="${GUIDE_SELECTORS.page}:replace"
+        ><span class="guide-lang-label">${renderLanguageLabel(viewState.language, controlLocale)}</span></a>
+      </div>
     </div>
   </div>`;
 };
 
 const renderNavigationItem = (item: GuideNavigationItem, viewState: GuideViewState): string => {
   const isActive = item.id === viewState.section;
-  const href = toGuideHref({
-    language: viewState.language,
-    section: item.id,
-    theme: viewState.theme,
-  });
 
   return `<li>
     <a
-      href="${href}"
+      href="#${item.id}"
       class="guide-nav-link ${isActive ? "menu-active" : ""}"
-      ${isActive ? 'aria-current="page"' : ""}
+      data-guide-section-id="${item.id}"
+      ${isActive ? 'aria-current="location"' : ""}
       aria-label="${escapeAttribute(inlineCopy(item.title, viewState.language))}"
-      hx-indicator="${GUIDE_HTMX.shellIndicator}"
-      hx-target="${GUIDE_SELECTORS.shell}"
-      hx-swap="${GUIDE_HTMX.shellSwapShowMain}"
-      hx-sync="${GUIDE_SELECTORS.shell}:replace"
     >
       <span class="guide-nav-index">${item.index}</span>
       <span class="guide-nav-copy">${renderLocalizedSpans(item.title)}</span>
@@ -346,6 +438,24 @@ const renderCoverMetaItem = (
   })}</dd>
 </dl>`;
 
+const renderGuideSections = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
+  const socialPreviewModel = resolveGuideSocialPreviewRenderModel(
+    requestQuery,
+    viewState.language,
+    viewState.section,
+    requestOrigin
+  );
+
+  return GUIDE_NAVIGATION.map((item) => {
+    const sectionMarkup = renderSectionMarkup(item.id, viewState.language);
+    if (item.id !== "s15") {
+      return sectionMarkup;
+    }
+
+    return renderGuideSocialSectionMarkup(sectionMarkup, viewState.language, viewState.section, socialPreviewModel);
+  }).join("\n");
+};
+
 const renderGuideCoverTitle = (): string =>
   `<span class="guide-cover-title-en" data-lang-en="">${escapeHtml(resolveCopy("guideCoverTitlePrefix", "en"))} <em>${escapeHtml(
     resolveCopy("guideCoverTitleAccent", "en")
@@ -353,17 +463,14 @@ const renderGuideCoverTitle = (): string =>
     resolveCopy("guideCoverTitlePrefix", "zh")
   )}<em>${escapeHtml(resolveCopy("guideCoverTitleAccent", "zh"))}</em>${escapeHtml(resolveCopy("guideCoverTitleSuffix", "zh"))}</span>`;
 
-const renderSunIcon = (): string =>
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" aria-hidden="true"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"></path></svg>';
-
-const renderMoonIcon = (): string =>
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" aria-hidden="true"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"></path></svg>';
-
 const inlineCopy = (copy: LocalizedCopy, language: GuideViewState["language"]): string =>
   language === "zh" ? copy.zh : language === "bi" ? `${copy.en} · ${copy.zh}` : copy.en;
 
 const resolveCoverLogoPath = (theme: GuideViewState["theme"]): string =>
   theme === "light" ? GUIDE_BRAND_ASSETS.logoBlack : GUIDE_BRAND_ASSETS.logoWhite;
+
+const effectiveThemeForLogo = (theme: GuideViewState["theme"]): "dark" | "light" =>
+  theme === "light" ? "light" : "dark";
 
 const renderMenuIcon = (): string =>
   '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>';

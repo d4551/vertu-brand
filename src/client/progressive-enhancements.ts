@@ -3,76 +3,50 @@ import Prism from "prismjs";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-javascript";
 
+import { initializeLogoGenerator as initializeLogoGeneratorEnhancement } from "./logo-generator";
+import { initializeSocialToolkit as initializeSocialToolkitEnhancement } from "./social-toolkit";
 import { GUIDE_DOWNLOADS, type GuideDownloadId } from "../shared/config";
 import { resolveScrollProgressPercent, resolveTypePlaygroundState } from "../shared/guide-interactions";
+import { resolveGuideSocialQueryValues, toSocialGuideHref } from "../shared/social-toolkit";
 import { GUIDE_DOM_IDS, GUIDE_SELECTORS } from "../shared/shell-contract";
+import {
+  isGuideSectionId,
+  isGuideLanguage,
+  normalizeGuideTheme,
+  nextGuideTheme,
+  nextGuideLanguage,
+  type GuideSectionId,
+} from "../shared/view-state";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-const LOGO_DEFAULTS = {
-  black: "#F2EDE5",
-  gold: "#111111",
-  white: "#080808",
-} as const;
-
-const LOGO_CONTRAST_POLICY = {
-  black: { minBackgroundLuminance: 0.2 },
-  gold: { maxBackgroundLuminance: 0.94 },
-  white: { maxBackgroundLuminance: 0.82 },
-} as const;
-
-const SOCIAL_FORMATS = {
-  "ig-post": { height: 1080, label: "Instagram-Post", width: 1080 },
-  "ig-story": { height: 1920, label: "Instagram-Story", width: 1080 },
-  linkedin: { height: 627, label: "LinkedIn-Post", width: 1200 },
-  "x-header": { height: 500, label: "X-Header", width: 1500 },
-} as const;
-
-interface SocialTheme {
-  background: string;
-  headline: string;
-  logo: HTMLImageElement | null;
-  rule: string;
-  subline: string;
-}
-
-interface SocialThemeLogos {
-  black: HTMLImageElement | null;
-  gold: HTMLImageElement | null;
-  white: HTMLImageElement | null;
-}
-
-type SocialFormatKey = keyof typeof SOCIAL_FORMATS;
-type SocialThemeKey = keyof ReturnType<typeof resolveSocialThemes>;
-
 let globalHandlersBound = false;
 let toastTimer = 0;
 let lastDrawerTrigger: HTMLElement | null = null;
+let pendingViewportSyncFrame = 0;
+let lastAnchoredViewKey = "";
 const assetAvailabilityCache = new Map<string, Promise<boolean>>();
 
-const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
-
 const isGuideDownloadId = (value: string): value is GuideDownloadId => value in GUIDE_DOWNLOADS;
-
-const hasRecordKey = <Key extends string>(record: Record<Key, unknown>, value: string): value is Key =>
-  Object.prototype.hasOwnProperty.call(record, value);
-
-const resolveSocialFormatKey = (value: string): SocialFormatKey =>
-  hasRecordKey(SOCIAL_FORMATS, value) ? value : "ig-post";
-
-const resolveSocialThemeKey = (value: string, themes: Record<SocialThemeKey, SocialTheme>): SocialThemeKey =>
-  hasRecordKey(themes, value) ? value : "dark";
 
 const initializeGuide = (): void => {
   syncDocumentState();
   syncDrawerState();
   updateScrollProgress();
+  alignViewToRequestedSection();
   syncActiveNavigation();
   initializeCodeHighlighting();
   initializeTypePlayground();
-  initializeLogoGenerator();
-  initializeSocialGenerator();
+  initializeLogoGeneratorEnhancement({
+    shellDataset,
+    showToast,
+    triggerDownload,
+  });
+  initializeSocialToolkitEnhancement({
+    resolveGuidePage,
+    resolveShell,
+  });
 };
 
 const bindGlobalHandlers = (): void => {
@@ -84,7 +58,17 @@ const bindGlobalHandlers = (): void => {
   document.addEventListener("change", handleDocumentChange);
   document.addEventListener("keydown", handleDocumentKeydown);
   window.addEventListener("resize", handleWindowResize);
-  window.addEventListener("scroll", updateScrollProgress, { passive: true });
+  window.addEventListener("scroll", handleWindowScroll, { passive: true });
+  window.addEventListener("popstate", handleHistoryChange);
+  window.addEventListener("hashchange", handleHistoryChange);
+
+  const colorSchemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+  colorSchemeMedia.addEventListener("change", () => {
+    const stateRoot = resolveGuidePage() || resolveShell();
+    if (stateRoot?.dataset.theme === "system") {
+      syncDocumentState();
+    }
+  });
 
   const body = document.body;
   if (body) {
@@ -113,15 +97,29 @@ const handleDocumentClick = (event: Event): void => {
 
   const drawerOpenButton = target.closest<HTMLElement>(GUIDE_SELECTORS.drawerOpenButton);
   if (drawerOpenButton) {
-    event.preventDefault();
-    toggleDrawer(true, drawerOpenButton);
+    lastDrawerTrigger = drawerOpenButton;
     return;
   }
 
   const drawerCloseButton = target.closest<HTMLElement>(GUIDE_SELECTORS.drawerCloseButton);
   if (drawerCloseButton) {
+    return;
+  }
+
+  const navigationLink = target.closest<HTMLAnchorElement>(".guide-nav-link[data-guide-section-id]");
+  if (navigationLink) {
+    const sectionId = navigationLink.dataset.guideSectionId;
+    if (!sectionId || !isGuideSectionId(sectionId)) {
+      return;
+    }
+
     event.preventDefault();
-    toggleDrawer(false, drawerCloseButton);
+    const nextSectionId: GuideSectionId = sectionId;
+    syncActiveSectionState(nextSectionId, "push", true);
+    if (isDrawerOpen()) {
+      toggleDrawer(false, navigationLink);
+    }
+    focusMainRegion();
     return;
   }
 
@@ -173,14 +171,44 @@ const handleDocumentChange = (event: Event): void => {
 };
 
 const handleDocumentKeydown = (event: KeyboardEvent): void => {
+  const drawerTrigger = event.target instanceof HTMLElement
+    ? event.target.closest<HTMLElement>(`${GUIDE_SELECTORS.drawerOpenButton}, ${GUIDE_SELECTORS.drawerCloseButton}`)
+    : null;
+
+  if (drawerTrigger && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    drawerTrigger.click();
+    return;
+  }
+
   if (event.key === "Escape" && isDrawerOpen()) {
     toggleDrawer(false, lastDrawerTrigger);
+    return;
+  }
+
+  if (event.key === "Tab" && isDrawerOpen()) {
+    trapDrawerFocus(event);
   }
 };
 
 const handleWindowResize = (): void => {
   syncDrawerState();
-  updateScrollProgress();
+  scheduleViewportSync();
+};
+
+const handleWindowScroll = (): void => {
+  scheduleViewportSync();
+};
+
+const handleHistoryChange = (): void => {
+  const hashSection = window.location.hash.replace(/^#/, "");
+  if (window.location.hash && !isGuideSectionId(hashSection)) {
+    syncActiveNavigation();
+    return;
+  }
+
+  alignViewToRequestedSection();
+  syncActiveNavigation();
 };
 
 const handleBeforeRequest = (event: Event): void => {
@@ -200,9 +228,8 @@ const handleAfterSwap = (event: Event): void => {
   initializeGuide();
 
   const target = resolveHtmxTarget(event);
-  if (target instanceof HTMLElement && target.id === GUIDE_DOM_IDS.shell) {
+  if (target instanceof HTMLElement && (target.id === GUIDE_DOM_IDS.shell || target.id === GUIDE_DOM_IDS.page)) {
     focusMainRegion();
-    scrollMainRegionIntoView();
   }
 };
 
@@ -210,6 +237,7 @@ const handleHistoryRestore = (): void => {
   setGuideBusyState(false);
   initializeGuide();
   focusMainRegion();
+  syncActiveNavigation();
   scrollActiveNavigationIntoView();
 };
 
@@ -223,15 +251,23 @@ const syncDocumentState = (): void => {
   const theme = stateRoot.dataset.theme || "dark";
 
   document.documentElement.setAttribute("data-lang", language);
-  document.documentElement.setAttribute("data-theme", theme);
+  const effectiveTheme =
+    theme === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : theme;
+  document.documentElement.setAttribute("data-theme", effectiveTheme);
   document.documentElement.lang = language === "zh" ? "zh" : "en";
 };
 
 const syncDrawerState = (): void => {
   const drawerCheckbox = document.getElementById(GUIDE_DOM_IDS.drawerControl);
   const mainContent = document.getElementById(GUIDE_DOM_IDS.mainContent);
-  const isOpen = isDrawerOpen();
   const isModal = window.innerWidth < 1024;
+  if (!isModal && drawerCheckbox instanceof HTMLInputElement && drawerCheckbox.checked) {
+    drawerCheckbox.checked = false;
+  }
+
+  const isOpen = isDrawerOpen();
 
   [
     document.getElementById(GUIDE_DOM_IDS.drawerOpenButton),
@@ -262,6 +298,35 @@ const syncDrawerState = (): void => {
   if (!isOpen && lastDrawerTrigger instanceof HTMLElement) {
     lastDrawerTrigger.focus({ preventScroll: true });
     lastDrawerTrigger = null;
+  }
+};
+
+const trapDrawerFocus = (event: KeyboardEvent): void => {
+  const sidebarPanel = document.getElementById(GUIDE_DOM_IDS.sidebarPanel);
+  if (!(sidebarPanel instanceof HTMLElement)) {
+    return;
+  }
+
+  const focusableElements = Array.from(sidebarPanel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (element) => !element.hasAttribute("disabled") && !element.getAttribute("aria-hidden")
+  );
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements.at(-1);
+  if (!(firstElement instanceof HTMLElement) || !(lastElement instanceof HTMLElement)) {
+    return;
+  }
+
+  const activeElement = document.activeElement;
+  if (event.shiftKey && activeElement === firstElement) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (!event.shiftKey && activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
   }
 };
 
@@ -385,6 +450,18 @@ const updateScrollProgress = (): void => {
   progressBar.style.width = `${percent}%`;
 };
 
+const scheduleViewportSync = (): void => {
+  if (pendingViewportSyncFrame) {
+    return;
+  }
+
+  pendingViewportSyncFrame = window.requestAnimationFrame(() => {
+    pendingViewportSyncFrame = 0;
+    updateScrollProgress();
+    syncActiveNavigation();
+  });
+};
+
 const focusMainRegion = (): void => {
   const mainRegion = document.getElementById(GUIDE_DOM_IDS.mainRegion);
   if (mainRegion instanceof HTMLElement) {
@@ -392,22 +469,18 @@ const focusMainRegion = (): void => {
   }
 };
 
-const scrollMainRegionIntoView = (): void => {
-  const mainRegion = document.getElementById(GUIDE_DOM_IDS.mainRegion);
-  if (mainRegion instanceof HTMLElement) {
-    mainRegion.scrollIntoView({ block: "start" });
-  }
-};
-
 const syncActiveNavigation = (): void => {
-  window.requestAnimationFrame(() => {
-    scrollActiveNavigationIntoView();
-  });
+  const visibleSectionId = resolveVisibleSectionId();
+  if (!visibleSectionId) {
+    return;
+  }
+
+  syncActiveSectionState(visibleSectionId, "replace", false);
 };
 
 const scrollActiveNavigationIntoView = (): void => {
   const drawerNav = document.getElementById(GUIDE_DOM_IDS.drawerNav);
-  const activeLink = drawerNav?.querySelector<HTMLElement>('[aria-current="page"]');
+  const activeLink = drawerNav?.querySelector<HTMLElement>('[aria-current="location"]');
 
   if (!(drawerNav instanceof HTMLElement) || !(activeLink instanceof HTMLElement)) {
     return;
@@ -417,6 +490,178 @@ const scrollActiveNavigationIntoView = (): void => {
     block: "nearest",
     inline: "nearest",
   });
+};
+
+const alignViewToRequestedSection = (): void => {
+  const requestedSectionId = resolveRequestedSectionId();
+  const page = resolveGuidePage();
+  const shell = resolveShell();
+  const viewKey = `${page?.dataset.language ?? shell?.dataset.language ?? "bi"}:${page?.dataset.theme ?? shell?.dataset.theme ?? "dark"}:${requestedSectionId}`;
+
+  if (lastAnchoredViewKey === viewKey) {
+    return;
+  }
+
+  lastAnchoredViewKey = viewKey;
+  syncActiveSectionState(requestedSectionId, "replace", false);
+
+  if (requestedSectionId === "s0") {
+    window.scrollTo({ behavior: "auto", top: 0 });
+    return;
+  }
+
+  const section = resolveGuideSection(requestedSectionId);
+  if (section instanceof HTMLElement) {
+    section.scrollIntoView({ behavior: "auto", block: "start" });
+  }
+};
+
+const resolveRequestedSectionId = (): GuideSectionId => {
+  const url = new URL(window.location.href);
+  const hashSection = url.hash.replace(/^#/, "");
+  if (isGuideSectionId(hashSection)) {
+    return hashSection;
+  }
+
+  const querySection = url.searchParams.get("section");
+  if (querySection && isGuideSectionId(querySection)) {
+    const nextSectionId: GuideSectionId = querySection;
+    return nextSectionId;
+  }
+
+  const stateSection = resolveGuidePage()?.dataset.activeSection ?? resolveShell()?.dataset.activeSection ?? "s0";
+  return isGuideSectionId(stateSection) ? stateSection : "s0";
+};
+
+const resolveGuideSectionElements = (): HTMLElement[] =>
+  Array.from(document.querySelectorAll<HTMLElement>(`#${GUIDE_DOM_IDS.sectionPanel} .guide-section[id]`));
+
+const resolveGuideSection = (sectionId: GuideSectionId): HTMLElement | null =>
+  resolveGuideSectionElements().find((section) => section.id === sectionId) ?? null;
+
+const resolveVisibleSectionId = (): GuideSectionId | null => {
+  const sections = resolveGuideSectionElements();
+  if (sections.length === 0) {
+    return null;
+  }
+
+  const focusLine = Math.min(window.innerHeight * 0.35, 320);
+  let nearestSectionId = sections[0]?.id ?? "s0";
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  for (const section of sections) {
+    const rect = section.getBoundingClientRect();
+    if (rect.top <= focusLine && rect.bottom >= focusLine && isGuideSectionId(section.id)) {
+      return section.id;
+    }
+
+    const distance = Math.abs(rect.top - focusLine);
+    if (distance < nearestDistance && isGuideSectionId(section.id)) {
+      nearestDistance = distance;
+      nearestSectionId = section.id;
+    }
+  }
+
+  return isGuideSectionId(nearestSectionId) ? nearestSectionId : "s0";
+};
+
+const syncActiveSectionState = (sectionId: GuideSectionId, historyMode: "push" | "replace", shouldScroll: boolean): void => {
+  [resolveGuidePage(), resolveShell()].forEach((root) => {
+    if (root instanceof HTMLElement) {
+      root.dataset.activeSection = sectionId;
+    }
+  });
+
+  document.querySelectorAll<HTMLAnchorElement>(".guide-nav-link[data-guide-section-id]").forEach((link) => {
+    const isActive = link.dataset.guideSectionId === sectionId;
+    link.classList.toggle("menu-active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "location");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+
+  syncSidebarControlLinks(sectionId);
+  scrollActiveNavigationIntoView();
+
+  if (shouldScroll) {
+    const section = resolveGuideSection(sectionId);
+    if (section instanceof HTMLElement) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  syncSectionUrl(sectionId, historyMode);
+};
+
+const syncSidebarControlLinks = (sectionId: GuideSectionId): void => {
+  const currentLanguage = resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language ?? "bi";
+  const currentTheme = resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme ?? "dark";
+  const url = new URL(window.location.href);
+  const socialQuery = resolveGuideSocialQueryValues(url.searchParams);
+  const language = isGuideLanguage(currentLanguage) ? currentLanguage : "bi";
+  const theme = normalizeGuideTheme(currentTheme);
+
+  const themeCycleBtn = document.querySelector<HTMLAnchorElement>(".guide-theme-cycle[data-guide-theme]");
+  if (themeCycleBtn) {
+    const currentTheme = themeCycleBtn.dataset.guideTheme;
+    const nextTheme = currentTheme ? nextGuideTheme(normalizeGuideTheme(currentTheme)) : "light";
+    const href = toSocialGuideHref({
+      approvedAssetId: socialQuery.approvedAssetId,
+      assetKind: socialQuery.assetKind,
+      guideTheme: nextTheme,
+      language,
+      packId: socialQuery.packId,
+      section: sectionId,
+      socialTheme: socialQuery.socialTheme,
+    });
+    themeCycleBtn.href = href;
+    themeCycleBtn.setAttribute("hx-get", href);
+  }
+
+  const langCycleBtn = document.querySelector<HTMLAnchorElement>(".guide-lang-cycle[data-guide-language]");
+  if (langCycleBtn) {
+    const currentLang = langCycleBtn.dataset.guideLanguage;
+    const nextLang = currentLang && isGuideLanguage(currentLang) ? nextGuideLanguage(currentLang) : "zh";
+    const href = toSocialGuideHref({
+      approvedAssetId: socialQuery.approvedAssetId,
+      assetKind: socialQuery.assetKind,
+      guideTheme: theme,
+      language: nextLang,
+      packId: socialQuery.packId,
+      section: sectionId,
+      socialTheme: socialQuery.socialTheme,
+    });
+    langCycleBtn.href = href;
+    langCycleBtn.setAttribute("hx-get", href);
+  }
+};
+
+const syncSectionUrl = (sectionId: GuideSectionId, historyMode: "push" | "replace"): void => {
+  const currentLanguage = resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language ?? "bi";
+  const currentTheme = resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme ?? "dark";
+  const currentUrl = new URL(window.location.href);
+  const socialQuery = resolveGuideSocialQueryValues(currentUrl.searchParams);
+  const language = isGuideLanguage(currentLanguage) ? currentLanguage : "bi";
+  const theme = normalizeGuideTheme(currentTheme);
+  const nextHref = toSocialGuideHref({
+    approvedAssetId: socialQuery.approvedAssetId,
+    assetKind: socialQuery.assetKind,
+    guideTheme: theme,
+    language,
+    packId: socialQuery.packId,
+    section: sectionId,
+    socialTheme: socialQuery.socialTheme,
+  });
+  const url = new URL(nextHref, window.location.origin);
+
+  if (window.location.pathname === url.pathname && window.location.search === url.search && window.location.hash === url.hash) {
+    return;
+  }
+
+  const historyMethod = historyMode === "push" ? window.history.pushState : window.history.replaceState;
+  historyMethod.call(window.history, window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
 };
 
 const setGuideBusyState = (busy: boolean): void => {
@@ -491,325 +736,6 @@ const setTextContent = (element: HTMLElement, value: string): void => {
   element.textContent = value;
 };
 
-const initializeLogoGenerator = (): void => {
-  const canvas = document.getElementById("gen-canvas");
-  if (!(canvas instanceof HTMLCanvasElement) || canvas.dataset.enhanced === "true") {
-    return;
-  }
-
-  const selectVariant = document.getElementById("gen-variant");
-  const inputPadding = document.getElementById("gen-padding");
-  const inputBgColor = document.getElementById("gen-bgcolor");
-  const inputTransparent = document.getElementById("gen-transparent");
-  const buttonDownload = document.getElementById("gen-download-btn");
-  const feedback = document.getElementById("gen-contrast-feedback");
-  const logoSources = {
-    black: document.getElementById("src-logo-black"),
-    gold: document.getElementById("src-logo-gold"),
-    white: document.getElementById("src-logo-white"),
-  } as const;
-
-  if (
-    !(selectVariant instanceof HTMLSelectElement) ||
-    !(inputPadding instanceof HTMLInputElement) ||
-    !(inputBgColor instanceof HTMLInputElement) ||
-    !(inputTransparent instanceof HTMLInputElement) ||
-    !(buttonDownload instanceof HTMLButtonElement) ||
-    !(feedback instanceof HTMLElement)
-  ) {
-    return;
-  }
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-
-  canvas.dataset.enhanced = "true";
-  inputBgColor.value = cssValue("--v-black", LOGO_DEFAULTS.white);
-
-  const readVariant = (): keyof typeof logoSources =>
-    selectVariant.value === "black" || selectVariant.value === "gold" ? selectVariant.value : "white";
-
-  const readPadding = (): number => clamp(Number(inputPadding.value) || 40, 8, 300);
-
-  const drawPreview = (): boolean => {
-    const variant = readVariant();
-    const source = logoSources[variant];
-    const image = source instanceof HTMLImageElement ? source : null;
-    const isTransparent = inputTransparent.checked;
-    const background = inputBgColor.value || cssValue("--v-black", LOGO_DEFAULTS.white);
-
-    if (!image || !image.complete || !image.naturalWidth || !image.naturalHeight) {
-      feedback.textContent = shellDataset("toastLogoSourceUnavailable");
-      return false;
-    }
-
-    const invalidContrast = !isTransparent && !passesContrastPolicy(variant, background);
-    feedback.textContent = invalidContrast
-      ? interpolateTemplate(shellDataset("toastLogoContrastInvalid"), { variant })
-      : "";
-
-    const targetWidth = 800;
-    const padding = readPadding();
-    const scale = (targetWidth - padding * 2) / image.naturalWidth;
-    const drawWidth = image.naturalWidth * scale;
-    const drawHeight = image.naturalHeight * scale;
-    const targetHeight = Math.max(1, Math.round(drawHeight + padding * 2));
-
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    canvas.style.width = `${targetWidth}px`;
-    canvas.style.height = `${targetHeight}px`;
-
-    ctx.clearRect(0, 0, targetWidth, targetHeight);
-    if (!isTransparent) {
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, targetWidth, targetHeight);
-    }
-
-    ctx.drawImage(image, padding, padding, drawWidth, drawHeight);
-    return !invalidContrast;
-  };
-
-  const requestDownload = (): void => {
-    const variant = readVariant();
-    const okToExport = drawPreview();
-    if (!okToExport && !inputTransparent.checked) {
-      showToast(interpolateTemplate(shellDataset("toastLogoContrastInvalid"), { variant }));
-      return;
-    }
-
-    if (!canvas.width || !canvas.height) {
-      showToast(shellDataset("toastLogoDownloadFailed"));
-      return;
-    }
-
-    showToast(shellDataset("toastLogoDownloadStart"));
-    triggerDownload(
-      canvas.toDataURL("image/png"),
-      `VERTU-Logo-${variant}-${inputTransparent.checked ? "transparent" : "solid"}.png`
-    );
-    showToast(shellDataset("toastLogoGenerated"));
-  };
-
-  [selectVariant, inputPadding, inputBgColor, inputTransparent].forEach((element) => {
-    element.addEventListener("input", drawPreview);
-    element.addEventListener("change", drawPreview);
-  });
-
-  buttonDownload.addEventListener("click", requestDownload);
-  Object.values(logoSources).forEach((source) => {
-    if (source instanceof HTMLImageElement && !source.complete) {
-      source.addEventListener("load", drawPreview);
-    }
-  });
-
-  drawPreview();
-};
-
-const initializeSocialGenerator = (): void => {
-  const canvas = document.getElementById("social-canvas");
-  if (!(canvas instanceof HTMLCanvasElement) || canvas.dataset.enhanced === "true") {
-    return;
-  }
-
-  const selectFormat = document.getElementById("social-format");
-  const selectTheme = document.getElementById("social-theme");
-  const inputHeadline = document.getElementById("social-headline");
-  const inputSubline = document.getElementById("social-subline");
-  const buttonDownload = document.getElementById("social-download-btn");
-  const logoBlack = document.getElementById("src-logo-black");
-  const logoWhite = document.getElementById("src-logo-white");
-  const logoGold = document.getElementById("src-logo-gold");
-
-  if (
-    !(selectFormat instanceof HTMLSelectElement) ||
-    !(selectTheme instanceof HTMLSelectElement) ||
-    !(inputHeadline instanceof HTMLInputElement) ||
-    !(inputSubline instanceof HTMLInputElement) ||
-    !(buttonDownload instanceof HTMLButtonElement)
-  ) {
-    return;
-  }
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-
-  const logos: SocialThemeLogos = {
-    black: logoBlack instanceof HTMLImageElement ? logoBlack : null,
-    gold: logoGold instanceof HTMLImageElement ? logoGold : null,
-    white: logoWhite instanceof HTMLImageElement ? logoWhite : null,
-  };
-
-  canvas.dataset.enhanced = "true";
-
-  const socialThemes = () => resolveSocialThemes(logos);
-
-  const drawPreview = (): void => {
-    const themes = socialThemes();
-    const format = SOCIAL_FORMATS[resolveSocialFormatKey(selectFormat.value)];
-    const theme = themes[resolveSocialThemeKey(selectTheme.value, themes)];
-    const previewScale = Math.min(480 / format.width, 480 / format.height, 1);
-
-    canvas.width = Math.round(format.width * previewScale);
-    canvas.height = Math.round(format.height * previewScale);
-    canvas.style.width = `${canvas.width}px`;
-    canvas.style.height = `${canvas.height}px`;
-
-    renderSocialFrame(
-      ctx,
-      canvas.width,
-      canvas.height,
-      theme,
-      inputHeadline.value.trim() || inputHeadline.placeholder,
-      inputSubline.value.trim() || inputSubline.placeholder
-    );
-  };
-
-  const requestDownload = (
-    formatKey: keyof typeof SOCIAL_FORMATS,
-    themeKey: keyof ReturnType<typeof socialThemes>
-  ): void => {
-    const format = SOCIAL_FORMATS[formatKey];
-    const theme = socialThemes()[themeKey];
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = format.width;
-    exportCanvas.height = format.height;
-    const exportContext = exportCanvas.getContext("2d");
-
-    if (!exportContext) {
-      return;
-    }
-
-    renderSocialFrame(
-      exportContext,
-      format.width,
-      format.height,
-      theme,
-      inputHeadline.value.trim() || inputHeadline.placeholder,
-      inputSubline.value.trim() || inputSubline.placeholder
-    );
-
-    triggerDownload(exportCanvas.toDataURL("image/png"), `VERTU-Social-${format.label}-${themeKey}.png`);
-  };
-
-  [selectFormat, selectTheme, inputHeadline, inputSubline].forEach((element) => {
-    element.addEventListener("input", drawPreview);
-    element.addEventListener("change", drawPreview);
-  });
-
-  buttonDownload.addEventListener("click", () => {
-    const themes = socialThemes();
-    requestDownload(resolveSocialFormatKey(selectFormat.value), resolveSocialThemeKey(selectTheme.value, themes));
-  });
-
-  document.querySelectorAll<HTMLElement>(".social-preset-btn").forEach((button) => {
-    if (button.dataset.enhanced === "true") {
-      return;
-    }
-
-    button.dataset.enhanced = "true";
-    button.addEventListener("click", () => {
-      const themes = socialThemes();
-      const formatKey = resolveSocialFormatKey(button.dataset.format || "");
-      const themeKey = resolveSocialThemeKey(button.dataset.theme || "", themes);
-      requestDownload(formatKey, themeKey);
-    });
-  });
-
-  Object.values(logos).forEach((logo) => {
-    if (logo && !logo.complete) {
-      logo.addEventListener("load", drawPreview);
-    }
-  });
-
-  drawPreview();
-};
-
-const renderSocialFrame = (
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  theme: SocialTheme,
-  headline: string,
-  subline: string
-): void => {
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = theme.background;
-  context.fillRect(0, 0, width, height);
-
-  const margin = Math.round(width * 0.09);
-  const logoHeight = Math.round(height * 0.1);
-  const logoY = Math.round(height * 0.3);
-
-  if (theme.logo && theme.logo.complete && theme.logo.naturalWidth) {
-    const logoWidth = Math.round(logoHeight * (theme.logo.naturalWidth / theme.logo.naturalHeight));
-    context.drawImage(theme.logo, Math.round((width - logoWidth) / 2), logoY, logoWidth, logoHeight);
-  }
-
-  const ruleY = Math.round(logoY + logoHeight + height * 0.055);
-  context.strokeStyle = theme.rule;
-  context.lineWidth = Math.max(2, Math.round(height * 0.003));
-  context.beginPath();
-  context.moveTo(margin, ruleY);
-  context.lineTo(width - margin, ruleY);
-  context.stroke();
-
-  context.fillStyle = theme.headline;
-  context.font = `${Math.max(24, Math.round(height * 0.065))}px "Playfair Display", serif`;
-  context.textAlign = "center";
-  context.textBaseline = "top";
-  context.fillText(headline, width / 2, ruleY + height * 0.04, width - margin * 2);
-
-  context.fillStyle = theme.subline;
-  context.font = `${Math.max(18, Math.round(height * 0.032))}px "IBM Plex Mono", monospace`;
-  context.fillText(subline, width / 2, ruleY + height * 0.14, width - margin * 2);
-};
-
-const passesContrastPolicy = (variant: keyof typeof LOGO_CONTRAST_POLICY, hexColor: string): boolean => {
-  const luminance = relativeLuminance(hexColor);
-  const policy = LOGO_CONTRAST_POLICY[variant];
-
-  if ("minBackgroundLuminance" in policy) {
-    return luminance >= policy.minBackgroundLuminance;
-  }
-
-  return luminance <= policy.maxBackgroundLuminance;
-};
-
-const relativeLuminance = (hexColor: string): number => {
-  const rgb = hexToRgb(hexColor);
-  const channels = [rgb.r, rgb.g, rgb.b].map((channel) => {
-    const normalized = channel / 255;
-    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
-  });
-
-  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-};
-
-const hexToRgb = (hexColor: string): { b: number; g: number; r: number } => {
-  const normalized = hexColor.replace("#", "");
-  const value =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((channel) => `${channel}${channel}`)
-          .join("")
-      : normalized;
-
-  return {
-    b: Number.parseInt(value.slice(4, 6), 16),
-    g: Number.parseInt(value.slice(2, 4), 16),
-    r: Number.parseInt(value.slice(0, 2), 16),
-  };
-};
-
-const cssValue = (name: string, fallback: string): string =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-
 const probeAssetAvailability = (href: string): Promise<boolean> => {
   const cachedResponse = assetAvailabilityCache.get(href);
   if (cachedResponse) {
@@ -870,33 +796,6 @@ const resolveShell = (): HTMLElement | null => document.getElementById(GUIDE_DOM
 
 const shellDataset = (key: keyof DOMStringMap): string =>
   resolveShell()?.dataset[key] || resolveGuidePage()?.dataset[key] || "";
-
-const interpolateTemplate = (template: string, values: Record<string, string>): string =>
-  Object.entries(values).reduce((result, [key, value]) => result.replaceAll(`{${key}}`, value), template);
-
-const resolveSocialThemes = (logos: SocialThemeLogos): Record<"dark" | "gold" | "light", SocialTheme> => ({
-  dark: {
-    background: cssValue("--v-black", "#080808"),
-    headline: cssValue("--v-cream", "#F2EDE5"),
-    logo: logos.white,
-    rule: cssValue("--v-gold", "#D4B978"),
-    subline: cssValue("--v-titanium", "#B5AFA7"),
-  },
-  gold: {
-    background: cssValue("--v-gold", "#D4B978"),
-    headline: cssValue("--v-black", "#080808"),
-    logo: logos.black,
-    rule: cssValue("--v-black", "#080808"),
-    subline: cssValue("--v-charcoal", "#111111"),
-  },
-  light: {
-    background: cssValue("--v-ivory", "#FAF7F2"),
-    headline: cssValue("--ink", "#1A1816"),
-    logo: logos.black,
-    rule: cssValue("--v-gold", "#D4B978"),
-    subline: cssValue("--ink-soft", "#58534C"),
-  },
-});
 
 if (typeof document !== "undefined") {
   bindGlobalHandlers();

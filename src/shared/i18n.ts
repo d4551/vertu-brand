@@ -1,3 +1,4 @@
+import { GUIDE_BRAND_RELEASE } from "./template-catalog";
 import type { GuideLanguage } from "./view-state";
 
 /**
@@ -9,7 +10,7 @@ export interface LocalizedCopy {
 }
 
 /**
- * Localized UI copy keyed by the source HTML migration keys.
+ * Localized UI copy keyed by the source HTML authoring keys.
  */
 export const UI_COPY = {
   accessibilityAa: { en: "AA", zh: "AA" },
@@ -68,8 +69,8 @@ export const UI_COPY = {
   cropGood: { en: "Correct", zh: "正确" },
   downloadDocxAria: { en: "Download the premium letterhead DOCX template", zh: "下载高端信纸 DOCX 模板" },
   downloadGuideAria: {
-    en: "Download the interactive offline HTML brand guide",
-    zh: "下载可离线使用的交互式 HTML 品牌指南",
+    en: "Download the HTML guide snapshot",
+    zh: "下载 HTML 指南快照",
   },
   downloadLogoBlackAlt: { en: "Downloadable black VERTU logo preview", zh: "可下载的黑色 VERTU 标志预览" },
   downloadLogoBlackAria: {
@@ -98,9 +99,9 @@ export const UI_COPY = {
     zh: "VERTU 官方品牌参考，涵盖视觉识别、表达规范、下载资源与实施指引。",
   },
   guideCoverClassificationLabel: { en: "Classification", zh: "密级" },
-  guideCoverClassificationValue: { en: "Internal + Partners", zh: "内部 + 合作伙伴" },
+  guideCoverClassificationValue: GUIDE_BRAND_RELEASE.classification,
   guideCoverDateLabel: { en: "Date", zh: "日期" },
-  guideCoverDateValue: { en: "March 2026", zh: "2026年3月" },
+  guideCoverDateValue: GUIDE_BRAND_RELEASE.date,
   guideCoverScrollLabel: { en: "Scroll to the guide content", zh: "滚动至指南内容" },
   guideCoverScrollPrompt: { en: "Scroll", zh: "向下滚动" },
   guideCoverSubtitle: {
@@ -111,7 +112,7 @@ export const UI_COPY = {
   guideCoverTitlePrefix: { en: "Brand", zh: "品牌" },
   guideCoverTitleSuffix: { en: "Guide", zh: "指南" },
   guideCoverVersionLabel: { en: "Version", zh: "版本" },
-  guideCoverVersionValue: { en: "4.0", zh: "4.0" },
+  guideCoverVersionValue: { en: GUIDE_BRAND_RELEASE.version, zh: GUIDE_BRAND_RELEASE.version },
   guideDocumentTitle: { en: "VERTU Brand Guide", zh: "VERTU 品牌指南" },
   guideLoadingState: { en: "Loading next section", zh: "正在加载下一章节" },
   guideTitle: { en: "Brand Guide", zh: "品牌指南" },
@@ -121,9 +122,13 @@ export const UI_COPY = {
     zh: "未找到请求的章节，系统已改为打开总览页。",
   },
   languageBilingual: { en: "Bilingual", zh: "双语" },
+  languageBilingualShort: { en: "BI", zh: "双语" },
   languageEnglish: { en: "English", zh: "英文" },
+  languageEnglishShort: { en: "EN", zh: "EN" },
+  languageLabel: { en: "Language", zh: "语言" },
   languageSelectLabel: { en: "Select guide language", zh: "选择指南语言" },
   languageChinese: { en: "Chinese", zh: "中文" },
+  languageChineseShort: { en: "CN", zh: "中文" },
   logoBackgroundColorLabel: { en: "Background color", zh: "背景色" },
   logoPaddingLabel: { en: "Logo padding", zh: "标志留白" },
   logoTransparentLabel: { en: "Transparent background", zh: "透明背景" },
@@ -167,44 +172,119 @@ export const UI_COPY = {
   playgroundSizeLabel: { en: "Size", zh: "字号" },
   playgroundTrackingLabel: { en: "Tracking", zh: "字间距" },
   playgroundWeightLabel: { en: "Weight", zh: "字重" },
-  quickExportDark: { en: "Quick Export — Dark Theme", zh: "快速导出 — 深色主题" },
   sectionNavigationLabel: { en: "Guide sections", zh: "指南章节" },
   sidebarNavigation: { en: "Sidebar navigation", zh: "侧边导航" },
   skipToMainContent: { en: "Skip to main content", zh: "跳转到主内容" },
-  socialFormatIgPost: { en: "Instagram Post (1080×1080)", zh: "Instagram 帖子（1080×1080）" },
-  socialFormatIgStory: { en: "Instagram Story (1080×1920)", zh: "Instagram 限时动态（1080×1920）" },
-  socialFormatLinkedin: { en: "LinkedIn Post (1200×627)", zh: "LinkedIn 帖子（1200×627）" },
-  socialFormatLabel: { en: "Social media format", zh: "社交媒体格式" },
-  socialFormatXHeader: { en: "X / Twitter Header (1500×500)", zh: "X / Twitter 页眉（1500×500）" },
-  socialGeneratorPreview: { en: "Social media template preview", zh: "社交媒体模板预览" },
-  socialHeadlineLabel: { en: "Headline", zh: "标语" },
-  socialHeadlinePlaceholder: { en: "Crafted Beyond Measure", zh: "超越匠心" },
-  socialPresetIgPostDarkAria: {
-    en: "Download the dark Instagram post preset as a PNG at 1080 by 1080",
-    zh: "以 1080×1080 PNG 下载深色 Instagram 帖子预设",
+  themeDark: { en: "Dark", zh: "深色" },
+  themeDarkShort: { en: "Dark", zh: "深色" },
+  themeLabel: { en: "Theme", zh: "主题" },
+  themeLight: { en: "Light", zh: "浅色" },
+  themeLightShort: { en: "Light", zh: "浅色" },
+  themeSystem: { en: "System", zh: "跟随系统" },
+  themeSystemShort: { en: "Auto", zh: "自动" },
+
+  /* Photography keywords (S6) */
+  photoKeywordTactile: { en: "Tactile", zh: "触感" },
+  photoKeywordLowKey: { en: "Low-key", zh: "低调光影" },
+  photoKeywordMaterialFirst: { en: "Material-first", zh: "材质为先" },
+  photoKeywordWarmHighlights: { en: "Warm highlights", zh: "暖色高光" },
+  photoKeywordQuietDrama: { en: "Quiet drama", zh: "静谧戏剧性" },
+
+  /* Image spec cards (S13) */
+  imgSpecWebIcon: { en: "WEB", zh: "WEB" },
+  imgSpecWebTitle: { en: "Web: Hero & Banner", zh: "网页：头图与横幅" },
+  imgSpecWebDetail: {
+    en: "Format: WebP (fallback JPEG)\nResolution: 2560×1440 @2x\nMax file: 250KB (hero), 120KB (card)\nQuality: 82–88% JPEG / 80% WebP\nColour profile: sRGB",
+    zh: "格式：WebP（备选 JPEG）\n分辨率：2560×1440 @2x\n最大文件：250KB（头图）120KB（卡片）\n质量：82–88% JPEG / 80% WebP\n色彩配置：sRGB",
   },
-  socialPresetIgPostDarkMeta: { en: "PNG · 1080×1080 · Dark", zh: "PNG · 1080×1080 · 深色" },
-  socialPresetIgStoryDarkAria: {
-    en: "Download the dark Instagram story preset as a PNG at 1080 by 1920",
-    zh: "以 1080×1920 PNG 下载深色 Instagram 限时动态预设",
+  imgSpecPdpIcon: { en: "PDP", zh: "PDP" },
+  imgSpecPdpTitle: { en: "Product Detail Pages", zh: "产品详情页" },
+  imgSpecPdpDetail: {
+    en: "Format: WebP / AVIF\nResolution: 1600×1600 @2x square\nBackground: #080808 (VERTU Black)\nMax file: 180KB per image\nZoom: Supply 4000×4000 source",
+    zh: "格式：WebP / AVIF\n分辨率：1600×1600 @2x 正方形\n背景：#080808（VERTU 黑）\n最大文件：180KB/张\n放大：需提供 4000×4000 源文件",
   },
-  socialPresetIgStoryDarkMeta: { en: "PNG · 1080×1920 · Dark", zh: "PNG · 1080×1920 · 深色" },
-  socialPresetLinkedinDarkAria: {
-    en: "Download the dark LinkedIn post preset as a PNG at 1200 by 627",
-    zh: "以 1200×627 PNG 下载深色 LinkedIn 帖子预设",
+  imgSpecSocIcon: { en: "SOC", zh: "SOC" },
+  imgSpecSocTitle: { en: "Social Media", zh: "社交媒体" },
+  imgSpecSocDetail: {
+    en: "Instagram: 1080×1350 (4:5 portrait)\nWeChat: 900×500 (article cover)\nWeibo: 1080×1080 (square)\nStories/Reels: 1080×1920 (9:16)\nFormat: JPEG, max 500KB",
+    zh: "Instagram：1080×1350（4:5 纵向）\n微信：900×500（文章封面）\n微博：1080×1080（正方形）\n限时动态/Reels：1080×1920（9:16）\n格式：JPEG，最大 500KB",
   },
-  socialPresetLinkedinDarkMeta: { en: "PNG · 1200×627 · Dark", zh: "PNG · 1200×627 · 深色" },
-  socialSublineLabel: { en: "Subline (optional)", zh: "副标语（选填）" },
-  socialSublinePlaceholder: { en: "VERTU England", zh: "VERTU 英格兰" },
+  imgSpecPrtIcon: { en: "PRT", zh: "PRT" },
+  imgSpecPrtTitle: { en: "Print & Packaging", zh: "印刷与包装" },
+  imgSpecPrtDetail: {
+    en: "Resolution: 300 DPI minimum\nColour: CMYK + spot (PMS 871 C)\nFormat: TIFF (uncompressed)\nBleed: 3mm all sides\nEmbed ICC profile: Fogra39",
+    zh: "分辨率：最低 300 DPI\n颜色：CMYK + 专色（PMS 871 C）\n格式：TIFF（无压缩）\n出血：四边各 3mm\n嵌入 ICC 配置文件：Fogra39",
+  },
+
+  /* Aspect ratio labels (S13) */
+  aspectHero: { en: "16:9 Hero", zh: "16:9 头图" },
+  aspectProduct: { en: "1:1 Product", zh: "1:1 产品" },
+  aspectSocial: { en: "4:5 Social", zh: "4:5 社交" },
+  aspectStories: { en: "9:16 Stories", zh: "9:16 限时动态" },
+  aspectCinematic: { en: "21:9 Cinematic", zh: "21:9 影院比例" },
+  socialPackEvent: { en: "Campaign Pack — Event", zh: "传播套件 — 私享活动" },
+  socialPackLabel: { en: "Campaign Pack", zh: "传播套件" },
+  socialPackLaunch: { en: "Campaign Pack — Launch", zh: "传播套件 — 新品发布" },
+  socialPackSignature: { en: "Campaign Pack — Signature", zh: "传播套件 — 品牌常青" },
+  socialAssetKindAnnouncement: { en: "Announcement Card", zh: "公告卡片" },
+  socialAssetKindDocsHeader: { en: "Docs / Blog Header", zh: "文档 / 博客头图" },
+  socialAssetKindEventInvite: { en: "Event Invite", zh: "活动邀请函" },
+  socialAssetKindIgPost: { en: "Instagram Post", zh: "Instagram 帖子" },
+  socialAssetKindIgStory: { en: "Instagram Story", zh: "Instagram 限时动态" },
+  socialAssetKindLabel: { en: "Asset type", zh: "素材类型" },
+  socialAssetKindLinkedin: { en: "LinkedIn Post", zh: "LinkedIn 帖子" },
+  socialAssetKindOgCard: { en: "Open Graph Card", zh: "Open Graph 卡片" },
+  socialAssetKindQuote: { en: "Quote Card", zh: "引言卡片" },
+  socialAssetKindXHeader: { en: "X / Twitter Header", zh: "X / Twitter 页眉" },
+  socialApprovedAssetAgentQ: { en: "Approved Asset — Agent Q", zh: "批准素材 — Agent Q" },
+  socialApprovedAssetLabel: { en: "Approved asset", zh: "批准素材" },
+  socialApprovedAssetQuantumFlip: { en: "Approved Asset — Quantum Flip", zh: "批准素材 — Quantum Flip" },
+  socialApprovedAssetSignature: { en: "Approved Asset — Signature Black/Red", zh: "批准素材 — Signature 黑红系列" },
+  socialToolkitAutoRefresh: {
+    en: "The preview refreshes through the server-owned toolkit as preset inputs change.",
+    zh: "当预设输入变化时，预览会通过服务端拥有的素材工具包自动刷新。",
+  },
+  socialToolkitLoadPreview: { en: "Load preview", zh: "加载预览" },
+  socialToolkitPreviewAria: { en: "Campaign toolkit preview", zh: "传播套件预览" },
+  socialToolkitPreviewIdle: {
+    en: "Choose a campaign pack to load the server-rendered preview and download manifest.",
+    zh: "选择传播套件以加载服务端渲染预览和下载清单。",
+  },
+  templateLibraryIntro: {
+    en: "Generated templates now come from one typed catalog shared by the guide UI and the build pipeline.",
+    zh: "模板现已统一由一个类型化目录驱动，供指南界面与构建流程共同使用。",
+  },
+  templateLibraryLabel: { en: "Template Library", zh: "模板库" },
+  socialToolkitErrorTitle: { en: "Invalid social asset request", zh: "社会化素材请求无效" },
+  socialToolkitErrorBody: {
+    en: "The requested social asset could not be resolved: {reason} ({value}).",
+    zh: "无法解析所请求的素材请求：{reason}（{value}）。",
+  },
+  socialToolkitErrorMissingValue: { en: "missing", zh: "缺失" },
+  socialToolkitReasonInvalidApprovedAsset: { en: "Approved asset is not supported", zh: "批准素材不受支持" },
+  socialToolkitReasonInvalidAssetForPreset: { en: "Asset type is not allowed for this preset", zh: "该预设不允许此素材类型" },
+  socialToolkitReasonInvalidAssetKind: { en: "Asset type is invalid", zh: "素材类型无效" },
+  socialToolkitReasonInvalidCarouselFrame: { en: "Carousel frame is invalid", zh: "轮播帧无效" },
+  socialToolkitReasonInvalidPack: { en: "Campaign pack is invalid", zh: "传播套件无效" },
+  socialToolkitReasonInvalidPreset: { en: "Preset is invalid", zh: "预设无效" },
+  socialToolkitReasonInvalidTheme: { en: "Theme is invalid", zh: "主题无效" },
+  socialToolkitLabelCampaignPack: { en: "Campaign Pack", zh: "传播套件" },
+  socialToolkitLabelSingleAssets: { en: "Single Assets", zh: "单张素材" },
+  socialToolkitLabelNoAssets: { en: "No assets are configured for this preset.", zh: "当前预设未配置素材。" },
+  socialToolkitLabelDownloadManifest: { en: "Download Manifest", zh: "下载清单" },
+  socialToolkitLabelDownload: { en: "Download", zh: "下载" },
+  socialToolkitLabelPreview: { en: "Preview", zh: "预览" },
+  socialToolkitLabelDimensions: { en: "Dimensions", zh: "尺寸" },
+  socialToolkitLabelStepSelect: { en: "Select Preset", zh: "选择预设" },
+  socialToolkitLabelStepReview: { en: "Review Assets", zh: "审阅素材" },
+  socialToolkitLabelStepExport: { en: "Export Pack", zh: "导出清单" },
+  socialToolkitLabelCarouselFrames: { en: "Carousel Frames", zh: "轮播帧" },
+  socialToolkitLabelFrame: { en: "Frame", zh: "轮播页" },
+  socialToolkitAssetsTableCaption: { en: "Campaign assets available for export", zh: "可导出的传播素材列表" },
   socialThemeDark: { en: "Dark — Black + Gold", zh: "深色 — 黑金配色" },
   socialThemeGold: { en: "Gold — Gold + Black", zh: "金色 — 金黑配色" },
   socialThemeLight: { en: "Light — Ivory + Gold", zh: "浅色 — 象牙白与金色" },
   socialThemeLabel: { en: "Social media theme", zh: "社交媒体主题" },
-  socialPresetXHeaderDarkAria: {
-    en: "Download the dark X header preset as a PNG at 1500 by 500",
-    zh: "以 1500×500 PNG 下载深色 X 封面预设",
-  },
-  socialPresetXHeaderDarkMeta: { en: "PNG · 1500×500 · Dark", zh: "PNG · 1500×500 · 深色" },
   spacingBaseUnit: { en: "Base unit — icon padding", zh: "基准单位 — 图标内边距" },
   spacingLarge: { en: "Large — between subsections", zh: "大 — 分区间距" },
   spacingMedium: { en: "Medium — section sub-gaps", zh: "中 — 子区块间距" },
@@ -212,8 +292,31 @@ export const UI_COPY = {
   spacingSmall: { en: "Small — card internal padding", zh: "小 — 卡片内边距" },
   spacingXL: { en: "XL — section padding", zh: "特大 — 区块内边距" },
   spacingXXL: { en: "XXL — hero/section padding (brand page)", zh: "超大 — 头图/区块内边距（页面）" },
-  themeDark: { en: "Dark", zh: "深色" },
-  themeLight: { en: "Light", zh: "浅色" },
+  templateLibraryAria: { en: "Template library", zh: "模板库" },
+  templateLibraryDownload: { en: "Download", zh: "下载" },
+  templateLibraryIntro: {
+    en: "Generated templates now come from one typed catalog shared by the guide UI and the build pipeline.",
+    zh: "模板现已统一由一个类型化目录驱动，供指南界面与构建流程共同使用。",
+  },
+  templateLibraryTitle: { en: "Template Library", zh: "模板库" },
+  templateGuideSnapshotCoverageLabel: { en: "Coverage", zh: "覆盖范围" },
+  templateGuideSnapshotCoverageValue: { en: "Bilingual", zh: "双语" },
+  templateGuideSnapshotDescription: {
+    en: "Generated from the live SSR shell so saved guide downloads stay aligned with the current application UI.",
+    zh: "由实时 SSR 外壳生成，确保下载的指南快照与当前应用界面保持一致。",
+  },
+  templateGuideSnapshotFormatLabel: { en: "Format", zh: "格式" },
+  templateGuideSnapshotHighlightArchive: {
+    en: "Best used as a shareable HTML snapshot instead of a separate legacy shell",
+    zh: "适合作为可分享的 HTML 快照，而非独立的旧版外壳",
+  },
+  templateGuideSnapshotHighlightShell: {
+    en: "Includes the same cover, sidebar, navigation, and request-state contract as the live guide",
+    zh: "包含与实时指南一致的封面、侧栏、导航与请求状态契约",
+  },
+  templateGuideSnapshotName: { en: "HTML Guide Snapshot", zh: "HTML 指南快照" },
+  templateGuideSnapshotSurfaceLabel: { en: "Surface", zh: "内容" },
+  templateGuideSnapshotSurfaceValue: { en: "SSR shell", zh: "SSR 外壳" },
   toggleTheme: { en: "Select guide theme", zh: "选择指南主题" },
   typeMetaBodyLabels: { en: "Body · Nav · UI · Labels", zh: "正文 · 导航 · UI · 标签" },
   typeMetaBodyWeights: { en: "400, 500, 600", zh: "400, 500, 600" },
@@ -265,6 +368,15 @@ export const resolveCopy = <Key extends keyof typeof UI_COPY>(
 ): string => interpolate(language, UI_COPY[key], replacements);
 
 /**
+ * Resolves localized copy for a concrete locale without the bilingual inline fallback.
+ */
+export const resolveLocaleCopy = <Key extends keyof typeof UI_COPY>(
+  key: Key,
+  language: Extract<GuideLanguage, "en" | "zh">,
+  replacements: Record<string, string> = {}
+): string => interpolate(language, UI_COPY[key], replacements);
+
+/**
  * Resolves localized toast text for the active language.
  */
 export const resolveToastCopy = <Key extends keyof typeof TOAST_COPY>(
@@ -277,7 +389,24 @@ export const resolveToastCopy = <Key extends keyof typeof TOAST_COPY>(
  * Renders bilingual spans so CSS can control EN/ZH visibility.
  */
 export const renderLocalizedSpans = (copy: LocalizedCopy): string =>
-  `<span data-lang-en="">${copy.en}</span><span data-lang-cn="">${copy.zh}</span>`;
+  `<span data-lang-en="" class="guide-copy-en" lang="en">${copy.en}</span><span data-lang-cn="" class="guide-copy-zh" lang="zh-Hans">${copy.zh}</span>`;
+
+/**
+ * Renders visible copy for the active language. Bilingual mode returns
+ * stacked EN/ZH spans instead of inline concatenation so compact chrome can
+ * expand without overlaps.
+ */
+export const renderVisibleCopy = <Key extends keyof typeof UI_COPY>(
+  key: Key,
+  language: GuideLanguage,
+  replacements: Record<string, string> = {}
+): string =>
+  language === "bi"
+    ? renderLocalizedSpans({
+        en: interpolate("en", UI_COPY[key], replacements),
+        zh: interpolate("zh", UI_COPY[key], replacements),
+      })
+    : interpolate(language, UI_COPY[key], replacements);
 
 const interpolate = (language: GuideLanguage, copy: LocalizedCopy, replacements: Record<string, string>): string => {
   const template = language === "zh" ? copy.zh : language === "bi" ? `${copy.en} · ${copy.zh}` : copy.en;

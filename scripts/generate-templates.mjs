@@ -7,6 +7,7 @@ import PptxGenJS from "pptxgenjs";
 import * as docx from "docx";
 import { GUIDE_DOWNLOADS } from "../src/shared/config.ts";
 import { writeStructuredLog } from "../src/shared/logger.ts";
+import { GUIDE_BRAND_CONTACT, GUIDE_BRAND_RELEASE, GUIDE_TEMPLATE_CATALOG } from "../src/shared/template-catalog.ts";
 
 /* ─────────────────────────────────────────────
    BRAND CONSTANTS
@@ -14,12 +15,12 @@ import { writeStructuredLog } from "../src/shared/logger.ts";
 
 const BRAND = {
   name: "VERTU",
-  company: "VERTU Limited",
-  version: "4.0",
-  year: "2026",
-  website: "https://www.vertu.com",
-  websiteText: "www.vertu.com",
-  email: "press@vertu.com",
+  company: GUIDE_BRAND_CONTACT.company,
+  version: GUIDE_BRAND_RELEASE.version,
+  year: GUIDE_BRAND_RELEASE.year,
+  website: GUIDE_BRAND_CONTACT.websiteHref,
+  websiteText: GUIDE_BRAND_CONTACT.websiteLabel,
+  email: GUIDE_BRAND_CONTACT.email,
   colors: {
     black: "080808",
     charcoal: "1A1816",
@@ -84,6 +85,9 @@ const PPTX = {
     closingTitle: 52,
   },
 };
+
+const PRESENTATION_TEMPLATE = GUIDE_TEMPLATE_CATALOG.presentation;
+const LETTERHEAD_TEMPLATE = GUIDE_TEMPLATE_CATALOG.letterhead;
 
 /* ── Logo images (base64-encoded for embedding) ── */
 const toBase64 = async (path) => {
@@ -312,7 +316,7 @@ function buildPptx() {
   pptx.layout = "LAYOUT_WIDE";
   pptx.author = BRAND.company;
   pptx.company = BRAND.company;
-  pptx.title = `${BRAND.name} ${BRAND.version} Brand Presentation`;
+  pptx.title = `${PRESENTATION_TEMPLATE.documentTitle} v${BRAND.version}`;
   pptx.theme = {
     headFontFace: FONT_FACE.display,
     bodyFontFace: FONT_FACE.body,
@@ -1232,8 +1236,8 @@ function buildMetadataTable() {
 function buildDocx() {
   return new Document({
     creator: BRAND.company,
-    title: `VERTU Letterhead v${BRAND.version}`,
-    description: "VERTU premium letterhead template.",
+    title: `${LETTERHEAD_TEMPLATE.documentTitle} v${BRAND.version}`,
+    description: LETTERHEAD_TEMPLATE.fileDescription,
     sections: [
       {
         properties: {

@@ -11,7 +11,7 @@ export type GuideLanguage = (typeof GUIDE_LANGUAGES)[number];
 /**
  * Supported guide themes.
  */
-export const GUIDE_THEMES = ["dark", "light"] as const;
+export const GUIDE_THEMES = ["dark", "light", "system"] as const;
 
 /**
  * Supported guide themes.
@@ -97,7 +97,20 @@ export const normalizeGuideLanguage = (value: string | null): GuideLanguage => {
 /**
  * Normalizes the incoming theme query value.
  */
-export const normalizeGuideTheme = (value: string | null): GuideTheme => (value === "light" ? "light" : "dark");
+export const normalizeGuideTheme = (value: string | null): GuideTheme =>
+  value === "light" ? "light" : value === "system" ? "system" : "dark";
+
+/**
+ * Next theme in cycle: dark → light → system → dark.
+ */
+export const nextGuideTheme = (current: GuideTheme): GuideTheme =>
+  current === "dark" ? "light" : current === "light" ? "system" : "dark";
+
+/**
+ * Next language in cycle: en → zh → bi → en.
+ */
+export const nextGuideLanguage = (current: GuideLanguage): GuideLanguage =>
+  current === "en" ? "zh" : current === "zh" ? "bi" : "en";
 
 /**
  * Resolves a query string into the canonical guide view state.

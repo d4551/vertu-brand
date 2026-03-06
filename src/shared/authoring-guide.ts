@@ -22,7 +22,7 @@ interface GuideAuthoringSection {
  * Rewrites authoring-time relative asset URLs so the live SSR app can serve
  * them from the generated public root regardless of the current request path.
  */
-export const rewriteLegacyAssetUrls = (markup: string): string => {
+export const normalizeAuthoringAssetUrls = (markup: string): string => {
   const rewriter = new HTMLRewriter().on("[href]", {
     element(element) {
       const href = element.getAttribute("href");

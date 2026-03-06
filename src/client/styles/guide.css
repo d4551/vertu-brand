@@ -19,6 +19,38 @@
   --color-v-titanium: #b5afa7;
 }
 
+@utility social-preview-grid {
+  @apply grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)];
+}
+
+@utility asset-operator-grid {
+  @apply grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] w-full items-stretch;
+}
+
+@utility asset-operator-grid--spaced {
+  @apply mb-8;
+}
+
+@utility asset-operator-panel {
+  @apply h-full;
+}
+
+@utility asset-preview-panel {
+  @apply h-full min-w-0 bg-base-100/70 shadow-sm;
+}
+
+@utility social-preview-panel {
+  @apply p-4 sm:p-6 lg:p-7;
+}
+
+@utility social-operator-form {
+  @apply relative;
+}
+
+@utility social-safe-zone-frame {
+  @apply rounded-box border border-base-300 bg-base-100 p-3 sm:p-4;
+}
+
 @plugin "daisyui" {
   themes:
     light --default,

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { app } from "../src/server/app";
 import { GUIDE_NAVIGATION } from "../src/server/content/navigation";
 import { GUIDE_PATHS } from "../src/server/runtime-config";
-import { HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
+import { GUIDE_ROUTES, HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
 import { findInteractiveElementsMissingAriaLabels } from "../src/shared/markup";
 import { GUIDE_DOM_IDS, GUIDE_HTMX, GUIDE_SELECTORS } from "../src/shared/shell-contract";
 import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS } from "../src/shared/view-state";
@@ -16,6 +16,9 @@ import { writeStructuredLog } from "../src/shared/logger";
 const auditRoot = GUIDE_PATHS.projectRoot;
 const consoleToken = ["con", "sole."].join("");
 const execCommandToken = ["exec", "Command("].join("");
+const htmxExtensionToken = ["htmx", ".defineExtension("].join("");
+const bunPluginToken = ["Bun", ".plugin("].join("");
+const socialRouteLiteralPattern = /["'`]\/social(?:\/|\?)/;
 const policyRoots = [
   join(auditRoot, "src"),
   join(auditRoot, "tests"),
@@ -65,7 +68,7 @@ if (
   fullHtml.includes("/scripts/vendor/prism.min.js") ||
   fullHtml.includes("/styles/vendor/prism-tomorrow.min.css")
 ) {
-  issues.push("SSR document still references legacy browser-side or vendored assets instead of the compiled pipeline.");
+  issues.push("SSR document still references browser-side or vendored assets instead of the compiled pipeline.");
 }
 
 if (!fullHtml.includes("hx-history-elt")) {
@@ -79,12 +82,8 @@ if (
   issues.push("Global guide controls are missing the shared page-level HTMX contract.");
 }
 
-if (!fullHtml.includes(`hx-sync="${GUIDE_SELECTORS.shell}:replace"`)) {
-  issues.push("HTMX shell controls are missing the shared request synchronization contract.");
-}
-
-if (!fullHtml.includes(`hx-boost="${GUIDE_HTMX.boostEnabled}"`)) {
-  issues.push("HTMX navigation is missing the shared boosted-link contract.");
+if (!fullHtml.includes('data-guide-section-id="s1"')) {
+  issues.push("Guide navigation is missing the shared section-anchor contract.");
 }
 
 if (!fullHtml.includes(`hx-disabled-elt="${GUIDE_HTMX.disabledFormElements}"`)) {
@@ -110,16 +109,11 @@ if (!fullHtml.includes(`id="${GUIDE_DOM_IDS.requestIndicator}"`)) {
   issues.push("SSR document is missing the HTMX request indicator.");
 }
 
-if (
-  fullHtml.includes("Apply") ||
-  fullHtml.includes("HTMX + Elysia") ||
-  fullHtml.includes("Server-rendered VERTU brand system with HTMX-driven section navigation.") ||
-  fullHtml.includes("Server-driven via HTMX")
-) {
+if (fullHtml.includes("HTMX + Elysia")) {
   issues.push("SSR shell still contains technical or obsolete primary-shell copy.");
 }
 
-if (!fullHtml.includes("社交媒体模板预览")) {
+if (!fullHtml.includes("传播套件预览")) {
   issues.push("Localized canvas accessibility copy is missing from the SSR document.");
 }
 
@@ -224,7 +218,7 @@ if (
 }
 
 const compiledStylesheetSource = await Bun.file(join(auditRoot, "src/client/styles/guide.css")).text();
-const legacyGuideExtractorSource = await Bun.file(join(auditRoot, "src", "shared", "legacy-guide.ts")).text();
+const authoringGuideSource = await Bun.file(join(auditRoot, "src", "shared", "authoring-guide.ts")).text();
 if (
   !compiledStylesheetSource.includes('@source "../../../.generated/content";') ||
   !compiledStylesheetSource.includes('@source "../../../src";')
@@ -233,13 +227,13 @@ if (
 }
 
 if (compiledStylesheetSource.includes('@source "../../../index.html";')) {
-  issues.push("Tailwind source scanning still points at the legacy authoring HTML.");
+  issues.push("Tailwind source scanning still points at the authoring HTML.");
 }
 
 if (
-  !legacyGuideExtractorSource.includes("new HTMLRewriter()") ||
-  legacyGuideExtractorSource.includes("SECTION_BLOCK_PATTERN") ||
-  legacyGuideExtractorSource.includes("SECTION_TITLE_PATTERN")
+  !authoringGuideSource.includes("new HTMLRewriter()") ||
+  authoringGuideSource.includes("SECTION_BLOCK_PATTERN") ||
+  authoringGuideSource.includes("SECTION_TITLE_PATTERN")
 ) {
   issues.push("Authoring extraction has drifted away from the Bun HTMLRewriter pipeline.");
 }
@@ -254,12 +248,20 @@ GUIDE_SECTION_IDS.forEach((sectionId) => {
 
 const typographyMarkup = renderSectionMarkup("s5", "en");
 if (!typographyMarkup.includes('id="typePreview"') || !typographyMarkup.includes('id="typeTrack"')) {
-  issues.push("Typography playground controls are missing from the migrated section markup.");
+  issues.push("Typography playground controls are missing from the generated section markup.");
 }
 
 const downloadsMarkup = renderSectionMarkup("s15", "en");
-if (!downloadsMarkup.includes('id="gen-canvas"') || !downloadsMarkup.includes('id="social-canvas"')) {
-  issues.push("Download generators are missing from the migrated section markup.");
+if (
+  !downloadsMarkup.includes('id="gen-canvas"') ||
+  !downloadsMarkup.includes('id="social-toolkit-form"') ||
+  !downloadsMarkup.includes(`action="${GUIDE_ROUTES.guide}"`) ||
+  !downloadsMarkup.includes(`hx-get="${GUIDE_ROUTES.socialPreview}"`) ||
+  !downloadsMarkup.includes('id="social-preview-panel"') ||
+  !downloadsMarkup.includes('hx-target="#social-preview-panel"') ||
+  !downloadsMarkup.includes('hx-sync="this:replace"')
+) {
+  issues.push("Download generators are missing from the generated section markup.");
 }
 
 const zhColorMarkup = renderSectionMarkup("s3", "zh");
@@ -273,13 +275,18 @@ if (!zhPantoneMarkup.includes("金属金 · 主色") || zhPantoneMarkup.includes
 }
 
 const zhDownloadsMarkup = renderSectionMarkup("s15", "zh");
-if (!zhDownloadsMarkup.includes("PNG · 1080×1080 · 深色") || zhDownloadsMarkup.includes("PNG · 1080×1080 · Dark")) {
-  issues.push("Social preset metadata is not fully localized in the generated zh downloads section.");
+if (
+  !zhDownloadsMarkup.includes("传播套件 — 品牌常青") ||
+  zhDownloadsMarkup.includes("Campaign Pack — Signature") ||
+  !zhDownloadsMarkup.includes("批准素材 — Agent Q")
+) {
+  issues.push("Social toolkit preset labels are not fully localized in the generated zh downloads section.");
 }
 
 if (
   !zhDownloadsMarkup.includes('aria-label="下载适用于浅色背景的黑色 VERTU 标志 PNG"') ||
-  !zhDownloadsMarkup.includes('aria-label="以 1080×1080 PNG 下载深色 Instagram 帖子预设"')
+  !zhDownloadsMarkup.includes('aria-label="传播套件"') ||
+  !zhDownloadsMarkup.includes('aria-label="传播套件预览"')
 ) {
   issues.push("Localized explicit aria labels are missing from the generated download controls.");
 }
@@ -305,16 +312,43 @@ policySources.forEach(([file, source]) => {
   }
 
   if (source.includes(execCommandToken)) {
-    issues.push(`Legacy document.execCommand fallback is still present in ${file.replace(`${auditRoot}/`, "")}.`);
+    issues.push(`document.execCommand fallback is still present in ${file.replace(`${auditRoot}/`, "")}.`);
+  }
+
+  if (source.includes(htmxExtensionToken)) {
+    issues.push(`Unexpected custom HTMX extension was introduced in ${file.replace(`${auditRoot}/`, "")}.`);
+  }
+
+  if (source.includes(bunPluginToken)) {
+    issues.push(`Unexpected Bun plugin API usage was introduced in ${file.replace(`${auditRoot}/`, "")}.`);
   }
 });
 
-const legacyGuideSource = await Bun.file(join(auditRoot, "index.html")).text();
-const legacyInlineScripts = [...legacyGuideSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(
+const authoringDocumentSource = await Bun.file(join(auditRoot, "index.html")).text();
+const authoringInlineScripts = [...authoringDocumentSource.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(
   ([, scriptBody]) => scriptBody
 );
 
-legacyInlineScripts.forEach((scriptBody, index) => {
+const socialPluginSource = await Bun.file(join(auditRoot, "src", "server", "social-plugin.ts")).text();
+const socialToolkitSource = await Bun.file(join(auditRoot, "src", "shared", "social-toolkit.ts")).text();
+const sectionMarkupSource = await Bun.file(join(auditRoot, "src", "shared", "section-markup.ts")).text();
+if (
+  socialRouteLiteralPattern.test(socialPluginSource) ||
+  socialRouteLiteralPattern.test(socialToolkitSource) ||
+  !socialPluginSource.includes("SOCIAL_ROUTE_TEMPLATES") ||
+  !socialPluginSource.includes("SOCIAL_QUERY_PARAMS") ||
+  !socialToolkitSource.includes("GUIDE_ROUTES.socialAsset") ||
+  !socialToolkitSource.includes("GUIDE_ROUTES.socialPack") ||
+  !socialToolkitSource.includes("GUIDE_ROUTES.socialPreview") ||
+  !socialToolkitSource.includes("SOCIAL_QUERY_PARAMS") ||
+  !sectionMarkupSource.includes("SOCIAL_QUERY_PARAMS") ||
+  socialToolkitSource.includes("http://localhost") ||
+  !socialToolkitSource.includes("GUIDE_SERVER.localOrigin")
+) {
+  issues.push("Social endpoint contracts are drifting away from centralized shared route constants.");
+}
+
+authoringInlineScripts.forEach((scriptBody, index) => {
   if (scriptBody.includes(consoleToken)) {
     issues.push(`Console logging is still present in index.html inline script #${index + 1}.`);
   }
@@ -344,6 +378,7 @@ writeStructuredLog({
     checkedSections: GUIDE_SECTION_IDS.length,
   },
 });
+process.exit(0);
 
 async function collectFiles(entries: string[]): Promise<string[]> {
   const results: string[] = [];

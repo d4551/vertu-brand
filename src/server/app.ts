@@ -8,6 +8,7 @@ import { writeStructuredLog } from "../shared/logger";
 import { GUIDE_DOM_IDS, GUIDE_SELECTORS } from "../shared/shell-contract";
 import { resolveGuideViewState } from "../shared/view-state";
 import { renderDocument, renderGuidePage, renderGuideShell } from "./render/layout";
+import { socialToolkitPlugin } from "./social-plugin";
 
 const staticAssets = await staticPlugin({
   alwaysStatic: true,
@@ -44,6 +45,7 @@ const resolveDownloadPath = (downloadId: GuideDownloadId): string =>
  */
 export const app = new Elysia({ nativeStaticResponse: true })
   .get(GUIDE_ROUTES.guide, ({ request, set }) => {
+    const requestUrl = new URL(request.url);
     const viewState = resolveGuideViewState(new URL(request.url));
     const isHtmxRequest = request.headers.get(HTMX_REQUEST_HEADERS.request) === "true";
     const isHistoryRestoreRequest = request.headers.get(HTMX_REQUEST_HEADERS.historyRestoreRequest) === "true";
@@ -59,13 +61,13 @@ export const app = new Elysia({ nativeStaticResponse: true })
 
     if (isHtmxRequest && !isHistoryRestoreRequest) {
       if (htmxTarget === GUIDE_DOM_IDS.page || htmxTarget === GUIDE_SELECTORS.page) {
-        return renderGuidePage(viewState);
+        return renderGuidePage(viewState, requestUrl.origin, requestUrl.searchParams);
       }
 
-      return renderGuideShell(viewState);
+      return renderGuideShell(viewState, requestUrl.origin, requestUrl.searchParams);
     }
 
-    return renderDocument(viewState);
+    return renderDocument(viewState, requestUrl.origin, requestUrl.searchParams);
   })
   .group("", (group) => {
     const downloadIds = Object.keys(GUIDE_DOWNLOADS) as GuideDownloadId[];
@@ -89,6 +91,7 @@ export const app = new Elysia({ nativeStaticResponse: true })
     }
     return group;
   })
+  .use(socialToolkitPlugin)
   .use(staticAssets);
 
 /**

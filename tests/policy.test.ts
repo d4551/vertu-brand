@@ -8,6 +8,9 @@ import { GUIDE_HTMX, GUIDE_SELECTORS } from "../src/shared/shell-contract";
 const ROOT = GUIDE_PATHS.projectRoot;
 const consoleToken = ["con", "sole."].join("");
 const execCommandToken = ["exec", "Command("].join("");
+const htmxExtensionToken = ["htmx", ".defineExtension("].join("");
+const bunPluginToken = ["Bun", ".plugin("].join("");
+const socialRouteLiteralPattern = /["'`]\/social(?:\/|\?)/;
 const POLICY_ROOTS = [
   join(ROOT, "src"),
   join(ROOT, "tests"),
@@ -28,7 +31,7 @@ describe("repository policy", () => {
     });
   });
 
-  test("keeps the legacy download bootstrap free from console logging and try/catch blocks", async () => {
+  test("keeps authoring inline scripts free from console logging and try/catch blocks", async () => {
     const source = await Bun.file(join(ROOT, "index.html")).text();
     const inlineScripts = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(
       ([, scriptBody]) => scriptBody
@@ -72,18 +75,18 @@ describe("repository policy", () => {
   });
 
   test("uses Bun HTMLRewriter for authoring extraction instead of parsing raw HTML sections with regex", async () => {
-    const legacyGuideSource = await Bun.file(join(ROOT, "src", "shared", "legacy-guide.ts")).text();
+    const authoringGuideSource = await Bun.file(join(ROOT, "src", "shared", "authoring-guide.ts")).text();
 
-    expect(legacyGuideSource.includes("new HTMLRewriter()")).toBe(true);
-    expect(legacyGuideSource.includes("SECTION_BLOCK_PATTERN")).toBe(false);
-    expect(legacyGuideSource.includes("SECTION_TITLE_PATTERN")).toBe(false);
-    expect(legacyGuideSource.includes("extractGuideSections")).toBe(true);
+    expect(authoringGuideSource.includes("new HTMLRewriter()")).toBe(true);
+    expect(authoringGuideSource.includes("SECTION_BLOCK_PATTERN")).toBe(false);
+    expect(authoringGuideSource.includes("SECTION_TITLE_PATTERN")).toBe(false);
+    expect(authoringGuideSource.includes("extractGuideSections")).toBe(true);
   });
 
   test("uses the built Tailwind and daisyUI asset pipeline instead of browser-side utility generation", async () => {
     const serverRenderSource = await Bun.file(join(ROOT, "src", "server", "render", "layout.ts")).text();
     const sharedConfigSource = await Bun.file(join(ROOT, "src", "shared", "config.ts")).text();
-    const legacyGuideSource = await Bun.file(join(ROOT, "index.html")).text();
+    const authoringSource = await Bun.file(join(ROOT, "index.html")).text();
 
     [
       "tailwindcss-playcdn",
@@ -92,8 +95,8 @@ describe("repository policy", () => {
       "/scripts/vendor/htmx.min.js",
       "/scripts/vendor/prism.min.js",
       "/styles/vendor/prism-tomorrow.min.css",
-    ].forEach((legacyReference) => {
-      expect(serverRenderSource.includes(legacyReference) || legacyGuideSource.includes(legacyReference)).toBe(false);
+    ].forEach((obsoleteReference) => {
+      expect(serverRenderSource.includes(obsoleteReference) || authoringSource.includes(obsoleteReference)).toBe(false);
     });
 
     expect(serverRenderSource.includes("GUIDE_ROUTES.stylesheet")).toBe(true);
@@ -128,12 +131,59 @@ describe("repository policy", () => {
     expect(layoutSource.includes("GUIDE_HTMX")).toBe(true);
     expect(layoutSource.includes('hx-target="${GUIDE_SELECTORS.page}"')).toBe(true);
     expect(layoutSource.includes('hx-sync="${GUIDE_SELECTORS.page}:replace"')).toBe(true);
-    expect(layoutSource.includes('hx-sync="${GUIDE_SELECTORS.shell}:replace"')).toBe(true);
-    expect(layoutSource.includes('hx-swap="${GUIDE_HTMX.shellSwapShowMain}"')).toBe(true);
     expect(enhancementSource.includes("GUIDE_DOM_IDS")).toBe(true);
     expect(enhancementSource.includes("GUIDE_SELECTORS")).toBe(true);
+    expect(enhancementSource.includes("toSocialGuideHref")).toBe(true);
+    expect(enhancementSource.includes("syncActiveSectionState")).toBe(true);
     expect(layoutSource.includes('hx-indicator="${GUIDE_HTMX.pageIndicator}"')).toBe(true);
-    expect(layoutSource.includes('hx-indicator="${GUIDE_HTMX.shellIndicator}"')).toBe(true);
+    expect(layoutSource.includes('hx-get="${themeCycleHref}"') || layoutSource.includes('hx-get="${href}"')).toBe(true);
+    expect(layoutSource.includes('hx-push-url="true"')).toBe(true);
+    expect(layoutSource.includes('data-guide-section-id="${item.id}"')).toBe(true);
+  });
+
+  test("keeps extension boundaries lean before launch (no custom HTMX/Bun plugin layer)", async () => {
+    const files = await collectFiles([join(ROOT, "src"), join(ROOT, "scripts")]);
+    const sources = await Promise.all(files.map(async (file) => [file, await Bun.file(file).text()] as const));
+
+    sources.forEach(([_, source]) => {
+      expect(source.includes(htmxExtensionToken)).toBe(false);
+      expect(source.includes(bunPluginToken)).toBe(false);
+    });
+  });
+
+  test("keeps social endpoint contracts centralized without hardcoded route literals", async () => {
+    const socialPluginSource = await Bun.file(join(ROOT, "src", "server", "social-plugin.ts")).text();
+    const socialToolkitSource = await Bun.file(join(ROOT, "src", "shared", "social-toolkit.ts")).text();
+    const sectionMarkupSource = await Bun.file(join(ROOT, "src", "shared", "section-markup.ts")).text();
+
+    expect(socialRouteLiteralPattern.test(socialPluginSource)).toBe(false);
+    expect(socialRouteLiteralPattern.test(socialToolkitSource)).toBe(false);
+    expect(socialPluginSource.includes("SOCIAL_ROUTE_TEMPLATES")).toBe(true);
+    expect(socialPluginSource.includes("SOCIAL_QUERY_PARAMS")).toBe(true);
+    expect(socialToolkitSource.includes("GUIDE_ROUTES.socialAsset")).toBe(true);
+    expect(socialToolkitSource.includes("GUIDE_ROUTES.socialPack")).toBe(true);
+    expect(socialToolkitSource.includes("GUIDE_ROUTES.socialPreview")).toBe(true);
+    expect(socialToolkitSource.includes("SOCIAL_QUERY_PARAMS")).toBe(true);
+    expect(sectionMarkupSource.includes("SOCIAL_QUERY_PARAMS")).toBe(true);
+  });
+
+  test("uses shared server origin defaults for social URL construction", async () => {
+    const socialToolkitSource = await Bun.file(join(ROOT, "src", "shared", "social-toolkit.ts")).text();
+
+    expect(socialToolkitSource.includes("http://localhost")).toBe(false);
+    expect(socialToolkitSource.includes("GUIDE_SERVER.localOrigin")).toBe(true);
+    expect(socialToolkitSource.includes("url.hash = input.section")).toBe(false);
+  });
+
+  test("keeps generated template metadata in a shared catalog instead of duplicating UI and build literals", async () => {
+    const templateCatalogSource = await Bun.file(join(ROOT, "src", "shared", "template-catalog.ts")).text();
+    const templateMarkupSource = await Bun.file(join(ROOT, "src", "shared", "template-markup.ts")).text();
+    const templateBuildSource = await Bun.file(join(ROOT, "scripts", "generate-templates.mjs")).text();
+
+    expect(templateCatalogSource.includes("GUIDE_TEMPLATE_CATALOG")).toBe(true);
+    expect(templateMarkupSource.includes("GUIDE_TEMPLATE_CATALOG")).toBe(true);
+    expect(templateBuildSource.includes("GUIDE_TEMPLATE_CATALOG")).toBe(true);
+    expect(templateBuildSource.includes("GUIDE_BRAND_RELEASE")).toBe(true);
   });
 });
 

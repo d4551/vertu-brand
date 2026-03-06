@@ -24,8 +24,10 @@ export const HTMX_CONFIG = {
  * Shared server runtime defaults for the local boot flow and static delivery.
  */
 export const GUIDE_SERVER = {
+  assetCacheControl: "public, max-age=86400, stale-while-revalidate=604800",
   defaultPort: 3000,
   localOrigin: "http://localhost:3000",
+  manifestCacheControl: "public, max-age=3600, stale-while-revalidate=86400",
   servePort: 3090,
   staticAssetCacheControl: "public, max-age=3600, stale-while-revalidate=86400",
 } as const;
@@ -37,6 +39,9 @@ export const GUIDE_ROUTES = {
   clientScript: "/assets/guide.js",
   downloadsHtml: "/downloads/vertu-brand-guide.html",
   guide: "/",
+  socialAsset: "/social",
+  socialPack: "/social/packs",
+  socialPreview: "/social/preview",
   stylesheet: "/assets/guide.css",
 } as const;
 
@@ -87,6 +92,7 @@ export const GUIDE_DOWNLOADS = {
  */
 export const GUIDE_BRAND_ASSETS = {
   logoBlack: "/VERTU-Logo-Black.png",
+  logoGold: "/VERTU-Logo-Gold.png",
   logoWhite: "/VERTU-Logo-White.png",
 } as const;
 

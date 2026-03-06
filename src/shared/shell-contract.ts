@@ -46,11 +46,8 @@ export const GUIDE_SELECTORS = {
  * Shared HTMX request behavior for the server-driven shell.
  */
 export const GUIDE_HTMX = {
-  boostEnabled: "true",
   disabledFormElements: "find select",
   pageIndicator: GUIDE_SELECTORS.requestIndicator,
   pageSwap: "outerHTML",
-  shellIndicator: GUIDE_SELECTORS.requestIndicator,
   shellSwap: "outerHTML",
-  shellSwapShowMain: `outerHTML show:${GUIDE_SELECTORS.mainRegion}:top`,
 } as const;

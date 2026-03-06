@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
 import { app } from "../src/server/app";
-import { HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
+import { GUIDE_ROUTES, HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
 import { GUIDE_NAVIGATION } from "../src/server/content/navigation";
 import { resolveScrollProgressPercent, resolveTypePlaygroundState } from "../src/shared/guide-interactions";
-import { GUIDE_DOM_IDS, GUIDE_HTMX, GUIDE_SELECTORS } from "../src/shared/shell-contract";
+import { GUIDE_DOM_IDS, GUIDE_SELECTORS } from "../src/shared/shell-contract";
+import { SOCIAL_GUIDE_QUERY_PARAMS } from "../src/shared/social-toolkit";
 import { GUIDE_SECTION_IDS } from "../src/shared/view-state";
 import { renderSectionMarkup } from "../src/server/content/source";
 
@@ -34,18 +35,26 @@ describe("guide shell rendering", () => {
     expect(html).toContain("hx-history-elt");
     expect(html).toContain(`hx-target="${GUIDE_SELECTORS.page}"`);
     expect(html).toContain(`hx-sync="${GUIDE_SELECTORS.page}:replace"`);
-    expect(html).toContain(`hx-sync="${GUIDE_SELECTORS.shell}:replace"`);
+    expect(html).toContain('hx-push-url="true"');
+    /* Cycle buttons: theme=light → next is system; lang=zh → next is bi */
+    expect(html).toContain('hx-get="/?section=s15&lang=zh&theme=system"');
+    expect(html).toContain('hx-get="/?section=s15&lang=bi&theme=light"');
+    expect(html).toContain('href="#s1"');
+    expect(html).toContain('data-guide-section-id="s1"');
     expect(html).toContain(`id="${GUIDE_DOM_IDS.scrollProgress}"`);
     expect(html).toContain('class="guide-progress-bar');
     expect(html).toContain(`id="${GUIDE_DOM_IDS.requestIndicator}"`);
     expect(html).toContain(`id="${GUIDE_DOM_IDS.coverScroll}"`);
+    expect(html).toMatch(new RegExp(`<label[^>]+id="${GUIDE_DOM_IDS.drawerOpenButton}"[^>]+for="${GUIDE_DOM_IDS.drawerControl}"`));
+    expect(html).toMatch(
+      new RegExp(`<label[^>]+id="${GUIDE_DOM_IDS.drawerCloseButton}"[^>]+for="${GUIDE_DOM_IDS.drawerControl}"`)
+    );
+    expect(html).toContain('id="s0"');
+    expect(html).toContain('id="s16"');
     expect(html).toContain('class="guide-cover-title-en"');
     expect(html).toContain('class="guide-cover-title-zh"');
-    expect(html).not.toContain("Apply");
     expect(html).not.toContain("HTMX + Elysia");
-    expect(html).not.toContain("Server-rendered VERTU brand system with HTMX-driven section navigation.");
-    expect(html).not.toContain("Server-driven via HTMX");
-    expect(html).toContain("社交媒体模板预览");
+    expect(html).toContain("传播套件预览");
   });
 
   test("renders only the shell fragment for HTMX section requests", async () => {
@@ -64,6 +73,8 @@ describe("guide shell rendering", () => {
     expect(html).not.toContain(`id="${GUIDE_DOM_IDS.page}"`);
     expect(html).toContain(`id="${GUIDE_DOM_IDS.shell}"`);
     expect(html).toContain('data-active-section="s14"');
+    expect(html).toContain('id="s0"');
+    expect(html).toContain('id="s16"');
   });
 
   test("renders the branded page fragment for HTMX language and theme requests", async () => {
@@ -110,9 +121,21 @@ describe("guide shell rendering", () => {
     expect(html).toContain("The requested section was not found");
     expect(html).toContain('data-active-section="s0"');
   });
+
+  test("serves the compiled stylesheet with a single sidebar overflow reset", async () => {
+    const response = await app.handle(new Request(toGuideRequestUrl(GUIDE_ROUTES.stylesheet)));
+    const css = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/css");
+    expect((css.match(/\.overflow-y-auto>\.menu\{/g) ?? [])).toHaveLength(1);
+    expect(css).toContain(".overflow-y-auto>.menu{padding-bottom:var(--guide-page-padding-block)}");
+    expect(css).toContain("[data-lang=bi] .guide-copy-en+.guide-copy-zh{margin-top:var(--guide-bilingual-gap)}");
+    expect(css).not.toContain("50vh");
+  });
 });
 
-describe("legacy section extraction", () => {
+describe("authoring section extraction", () => {
   test("keeps every canonical section available for rendering", () => {
     GUIDE_SECTION_IDS.forEach((sectionId) => {
       const markup = renderSectionMarkup(sectionId, "bi");
@@ -122,7 +145,7 @@ describe("legacy section extraction", () => {
     });
   });
 
-  test("keeps interactive typography and download markers in migrated sections", () => {
+  test("keeps interactive typography and download markers in authoring sections", () => {
     const typographyMarkup = renderSectionMarkup("s5", "en");
     const downloadsMarkup = renderSectionMarkup("s15", "en");
 
@@ -132,9 +155,44 @@ describe("legacy section extraction", () => {
     expect(typographyMarkup).toContain('id="typeWeight"');
     expect(typographyMarkup).toContain('id="typeTrack"');
     expect(downloadsMarkup).toContain('id="gen-canvas"');
-    expect(downloadsMarkup).toContain('id="social-canvas"');
+    expect(downloadsMarkup).toContain('id="social-toolkit-form"');
+    expect(downloadsMarkup).toContain('class="asset-operator-grid"');
+    expect(downloadsMarkup).toContain('class="social-toolkit-controls');
+    expect(downloadsMarkup).toContain(`action="${GUIDE_ROUTES.guide}"`);
+    expect(downloadsMarkup).toContain(`hx-get="${GUIDE_ROUTES.socialPreview}"`);
+    expect(downloadsMarkup).toContain('hx-disabled-elt="find select"');
+    expect(downloadsMarkup).toContain('id="social-preview-panel"');
+    expect(downloadsMarkup).toContain(`id="social-format" name="${SOCIAL_GUIDE_QUERY_PARAMS.asset}"`);
+    expect(downloadsMarkup).toContain(`id="social-theme" name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}"`);
+    expect(downloadsMarkup).toContain('hx-target="#social-preview-panel"');
+    expect(downloadsMarkup).toContain('hx-trigger="submit"');
+    expect(downloadsMarkup).toContain('hx-sync="this:replace"');
+    expect(downloadsMarkup).not.toContain('hx-trigger="change, submit"');
+    expect(downloadsMarkup).toContain('data-social-state="idle"');
+    expect(downloadsMarkup).toContain('aria-busy="false"');
+    expect(downloadsMarkup).toContain('value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"');
+    expect(downloadsMarkup).toContain('option value="quantum-flip" selected="selected"');
+    expect(downloadsMarkup).toContain('option value="gold" selected="selected"');
     expect(downloadsMarkup).toContain('id="dl-logo-black"');
+    expect(downloadsMarkup).toContain('class="template-library-grid"');
+    expect(downloadsMarkup).toContain('data-template-id="presentation"');
+    expect(downloadsMarkup).toContain('data-template-id="letterhead"');
     expect(downloadsMarkup).toContain('id="dl-guide"');
+  });
+
+  test("renders shared responsive scaffolds for the rebuilt component and accessibility sections", () => {
+    const componentsMarkup = renderSectionMarkup("s10", "bi");
+    const accessibilityMarkup = renderSectionMarkup("s11", "bi");
+
+    expect(componentsMarkup).toContain("component-specimens");
+    expect(componentsMarkup).toContain("component-specimen__caption");
+    expect(componentsMarkup).toContain("component-specimen__control");
+    expect(componentsMarkup).toContain("guide-copy-en");
+    expect(componentsMarkup).toContain("guide-copy-zh");
+    expect(accessibilityMarkup).toContain("contrast-card-list");
+    expect(accessibilityMarkup).toContain("contrast-table-mobile");
+    expect(accessibilityMarkup).toContain("gauge-container-wrapper");
+    expect(accessibilityMarkup).toContain("gauge-readout");
   });
 
   test("derives navigation titles and order from the authoring source metadata", () => {
@@ -144,16 +202,57 @@ describe("legacy section extraction", () => {
     expect(GUIDE_NAVIGATION[16]?.title.en).toBe("Agentic AI & LLM Guidelines");
   });
 
-  test("marks only the active navigation item as the current page", async () => {
+  test("marks only the active navigation item as the current location", async () => {
     const response = await app.handle(new Request(toGuideRequestUrl("/?section=s5&lang=en&theme=dark")));
     const html = await response.text();
-    const currentMatches = html.match(/aria-current="page"/g) ?? [];
+    const currentMatches = html.match(/aria-current="location"/g) ?? [];
 
     expect(currentMatches).toHaveLength(1);
     expect(html).not.toContain('aria-current="false"');
-    expect(html).toContain(`hx-boost="${GUIDE_HTMX.boostEnabled}"`);
-    expect(html).toContain(`hx-indicator="${GUIDE_HTMX.shellIndicator}"`);
-    expect(html).toContain(`hx-swap="${GUIDE_HTMX.shellSwapShowMain}"`);
+    expect(html).toContain('href="#s5"');
+    expect(html).toContain('data-guide-section-id="s5"');
+    expect(html).toContain("guide-theme-cycle");
+    expect(html).toContain('data-guide-language="en"');
+  });
+
+  test("renders label-driven drawer controls and compact segmented sidebar controls", async () => {
+    const response = await app.handle(new Request(toGuideRequestUrl("/?section=s15&lang=bi&theme=dark")));
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(`id="${GUIDE_DOM_IDS.drawerOpenButton}"`);
+    expect(html).toContain(`id="${GUIDE_DOM_IDS.drawerCloseButton}"`);
+    expect(html).toContain(`for="${GUIDE_DOM_IDS.drawerControl}"`);
+    expect(html).toContain('role="button"');
+    expect(html).toContain("guide-lang-cycle");
+    expect(html).toContain('data-guide-theme="dark"');
+    expect(html).toContain('data-guide-language="bi"');
+    expect(html).toContain("overflow-x-hidden");
+  });
+
+  test("renders the integrated social preview inside the main guide document", async () => {
+    const response = await app.handle(
+      new Request(
+        toGuideRequestUrl(
+          `/?section=s15&lang=bi&theme=dark&${SOCIAL_GUIDE_QUERY_PARAMS.pack}=campaign-event&${SOCIAL_GUIDE_QUERY_PARAMS.asset}=og-card&${SOCIAL_GUIDE_QUERY_PARAMS.approvedAsset}=quantum-flip&${SOCIAL_GUIDE_QUERY_PARAMS.theme}=gold`
+        )
+      )
+    );
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain('id="social-preview-panel"');
+    expect(html).toContain('data-social-state="success"');
+    expect(html).toContain(
+      '<span data-lang-en="" class="guide-copy-en" lang="en">Download Manifest</span><span data-lang-cn="" class="guide-copy-zh" lang="zh-Hans">下载清单</span>'
+    );
+    expect(html).toContain('class="social-preview-steps"');
+    expect(html.match(/class="social-preview-step"/g) ?? []).toHaveLength(3);
+    expect(html).toContain('class="social-preview-table-wrap"');
+    expect(html).toContain('class="social-preview-card-list"');
+    expect(html).toContain(`name="${SOCIAL_GUIDE_QUERY_PARAMS.pack}"`);
+    expect(html).toContain(`name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}"`);
+    expect(html).not.toContain("<!DOCTYPE html>\n<!DOCTYPE html>");
   });
 
   test("localizes supporting copy and explicit aria labels inside interactive sections", () => {
@@ -165,10 +264,12 @@ describe("legacy section extraction", () => {
     expect(colorMarkup).not.toContain("65% VERTU Black");
     expect(pantoneMarkup).toContain("金属金 · 主色");
     expect(pantoneMarkup).not.toContain("Metallic Gold · Primary");
-    expect(downloadsMarkup).toContain("PNG · 1080×1080 · 深色");
-    expect(downloadsMarkup).not.toContain("PNG · 1080×1080 · Dark");
+    expect(downloadsMarkup).toContain("传播套件 — 品牌常青");
+    expect(downloadsMarkup).not.toContain("Campaign Pack — Signature");
+    expect(downloadsMarkup).toContain("批准素材 — Agent Q");
     expect(downloadsMarkup).toContain('aria-label="下载适用于浅色背景的黑色 VERTU 标志 PNG"');
-    expect(downloadsMarkup).toContain('aria-label="以 1080×1080 PNG 下载深色 Instagram 帖子预设"');
+    expect(downloadsMarkup).toContain('aria-label="传播套件"');
+    expect(downloadsMarkup).toContain('aria-label="传播套件预览"');
   });
 });
 

@@ -4,10 +4,19 @@ import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { GUIDE_PATHS, GUIDE_PUBLIC_DIRECTORIES, GUIDE_PUBLIC_FILES } from "../src/server/runtime-config";
-import { extractGuideSections, rewriteLegacyAssetUrls } from "../src/shared/legacy-guide";
+import { extractGuideSections, normalizeAuthoringAssetUrls } from "../src/shared/authoring-guide";
 import { writeStructuredLog } from "../src/shared/logger";
+import {
+  buildSocialStaticAssetPath,
+  buildSocialStaticCarouselPath,
+  resolveCanonicalSocialBuildRequests,
+  resolveSocialPackManifest,
+  SOCIAL_PRESET_REGISTRY,
+} from "../src/shared/social-toolkit";
 import { prepareSectionMarkup } from "../src/shared/section-markup";
 import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS } from "../src/shared/view-state";
+import { renderSocialAssetPng, renderSocialCarouselFramePng } from "../src/server/social-renderer";
+import { toGuideRequestUrl } from "../src/shared/config";
 
 const decoder = new TextDecoder();
 const stagingBuildDirectory = `${GUIDE_PATHS.buildDirectory}-next-${process.pid}-${crypto.randomUUID()}`;
@@ -20,6 +29,8 @@ const stagingPaths = {
   clientScriptOutput: toStagingPath(GUIDE_PATHS.clientScriptOutput),
   downloadGuideHtmlOutput: toStagingPath(GUIDE_PATHS.downloadGuideHtmlOutput),
   publicRoot: toStagingPath(GUIDE_PATHS.publicRoot),
+  socialManifestOutputRoot: toStagingPath(GUIDE_PATHS.socialManifestOutputRoot),
+  socialPublicOutputRoot: toStagingPath(GUIDE_PATHS.socialPublicOutputRoot),
   sectionNavigationOutput: toStagingPath(GUIDE_PATHS.sectionNavigationOutput),
   sectionRegistryOutput: toStagingPath(GUIDE_PATHS.sectionRegistryOutput),
   stylesheetOutput: toStagingPath(GUIDE_PATHS.stylesheetOutput),
@@ -38,6 +49,8 @@ const stagingDirectories = [
   ...new Set([
     dirname(stagingPaths.clientScriptOutput),
     dirname(stagingPaths.downloadGuideHtmlOutput),
+    stagingPaths.socialManifestOutputRoot,
+    stagingPaths.socialPublicOutputRoot,
     dirname(stagingPaths.sectionNavigationOutput),
     dirname(stagingPaths.sectionRegistryOutput),
     dirname(stagingPaths.stylesheetOutput),
@@ -81,7 +94,7 @@ const syncGeneratedOutput = async (sourceDirectory: string, destinationDirectory
 };
 
 const authoringGuideSource = await Bun.file(GUIDE_PATHS.downloadGuideHtmlSource).text();
-const runtimeGuideSource = rewriteLegacyAssetUrls(authoringGuideSource);
+const runtimeGuideSource = normalizeAuthoringAssetUrls(authoringGuideSource);
 const extractedSections = extractGuideSections(runtimeGuideSource);
 const sectionMetadata = extractedSections.map(({ id, index, title }) => ({ id, index, title }));
 const sectionRegistry = new Map(extractedSections.map(({ id, markup }) => [id, markup] as const));
@@ -95,7 +108,7 @@ const generatedSectionModule = [
   ...GUIDE_LANGUAGES.map(
     (language) =>
       `  [${JSON.stringify(language)}, new Map([${GUIDE_SECTION_IDS.map((sectionId) =>
-        JSON.stringify([sectionId, prepareSectionMarkup(sectionRegistry.get(sectionId) ?? "", language)])
+        JSON.stringify([sectionId, prepareSectionMarkup(sectionRegistry.get(sectionId) ?? "", language, sectionId)])
       ).join(", ")}])],`
   ),
   "]);",
@@ -112,7 +125,6 @@ const generatedNavigationModule = [
 ].join("\n");
 
 await Promise.all([
-  Bun.write(stagingPaths.downloadGuideHtmlOutput, runtimeGuideSource),
   Bun.write(stagingPaths.sectionNavigationOutput, generatedNavigationModule),
   Bun.write(stagingPaths.sectionRegistryOutput, generatedSectionModule),
 ]);
@@ -171,15 +183,59 @@ await Promise.all([
   ...stagingPublicFiles.map(({ outputPath, sourcePath }) => Bun.write(outputPath, Bun.file(sourcePath))),
 ]);
 
-const [navigationStats, scriptStats, stylesheetStats, sectionRegistryStats] = await Promise.all([
+const canonicalSocialRequests = resolveCanonicalSocialBuildRequests();
+const canonicalSocialPackRequests = [
+  ...new Map(
+    canonicalSocialRequests.map((request) => [`${request.packId}:${request.language}:${request.theme}:${request.section}`, request])
+  ).values(),
+];
+const canonicalSocialWrites = canonicalSocialRequests.map(async (request) => {
+  const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticAssetPath(request));
+  await mkdir(dirname(outputPath), { recursive: true });
+  await Bun.write(outputPath, await renderSocialAssetPng(request));
+});
+
+const canonicalSocialCarouselWrites = canonicalSocialPackRequests.flatMap((request) =>
+  SOCIAL_PRESET_REGISTRY[request.packId].carouselFrames.map(async (frame) => {
+    const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticCarouselPath(request, frame));
+    await mkdir(dirname(outputPath), { recursive: true });
+    await Bun.write(outputPath, await renderSocialCarouselFramePng(request, frame));
+  })
+);
+
+const canonicalSocialManifestWrites = canonicalSocialPackRequests.map(async (request) => {
+  const outputPath = resolve(
+    stagingPaths.socialManifestOutputRoot,
+    `${request.packId}-${request.language}-${request.theme}-${request.section}.json`
+  );
+  await mkdir(dirname(outputPath), { recursive: true });
+  const manifest = resolveSocialPackManifest(request);
+  await Bun.write(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
+});
+
+await Promise.all([...canonicalSocialWrites, ...canonicalSocialCarouselWrites, ...canonicalSocialManifestWrites]);
+
+const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, stylesheetStats, sectionRegistryStats] = await Promise.all([
   stat(stagingPaths.sectionNavigationOutput),
   stat(stagingPaths.clientScriptOutput),
+  stat(resolve(stagingPaths.socialManifestOutputRoot, "campaign-signature-en-light-s0.json")),
+  readdir(stagingPaths.socialPublicOutputRoot, { recursive: true }),
   stat(stagingPaths.stylesheetOutput),
   stat(stagingPaths.sectionRegistryOutput),
 ]);
 
 await syncGeneratedOutput(stagingBuildDirectory, GUIDE_PATHS.buildDirectory);
 await rm(stagingBuildDirectory, { force: true, recursive: true });
+
+const { app } = await import("../src/server/app");
+const downloadGuideResponse = await app.handle(new Request(toGuideRequestUrl("/?section=s0&lang=bi&theme=dark")));
+const downloadGuideHtml = await downloadGuideResponse.text();
+
+if (!downloadGuideResponse.ok) {
+  throw new Error(`Failed to generate the canonical HTML guide snapshot. HTTP ${downloadGuideResponse.status}`);
+}
+
+await Bun.write(GUIDE_PATHS.downloadGuideHtmlOutput, downloadGuideHtml);
 
 writeStructuredLog({
   component: "build",
@@ -190,6 +246,8 @@ writeStructuredLog({
     copiedFiles: stagingPublicFiles.length + 3,
     navigationBytes: navigationStats.size,
     scriptBytes: scriptStats.size,
+    socialManifestBytes: socialManifestStats.size,
+    socialPublicFiles: socialPublicEntries.length,
     sectionRegistryBytes: sectionRegistryStats.size,
     stylesheetBytes: stylesheetStats.size,
   },

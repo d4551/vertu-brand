@@ -84,9 +84,9 @@
       <!-- Navbar (Mobile Only, or Sticky Top) -->
       <header class="navbar bg-base-100/80 backdrop-blur sticky top-0 z-50 lg:hidden border-b border-base-200">
         <div class="flex-none">
-          <button id="drawerOpenButton" type="button" data-i18n-aria="openSidebar" class="btn btn-square btn-ghost lg:hidden" aria-controls="brand-drawer" aria-expanded="false">
+          <label id="drawerOpenButton" for="brand-drawer" data-i18n-aria="openSidebar" class="btn btn-square btn-ghost lg:hidden" aria-controls="brand-drawer" aria-expanded="false" role="button" tabindex="0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-          </button>
+          </label>
         </div>
         <div class="flex-1">
           <span class="btn btn-ghost normal-case text-xl tracking-widest font-bold pointer-events-none cursor-default">VERTU</span>
@@ -123,7 +123,7 @@
       
       
       
-    <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
+    <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Mission</span><span data-lang-cn="">使命</span></span>
         <p class="body-copy" data-lang-en="">To create instruments of enduring beauty and uncompromising intelligence: technology that liberates your time, amplifies your intent, and stands as a quiet declaration of who you are. Not a tool that demands your attention, but a companion that earns it.</p>
         <p class="body-copy" data-lang-cn="">创造隽永之美与卓越智能的器物: 释放你的时间、放大你的意志，静默地宣告你的独特存在。不是索取注意力的工具，而是值得注意力的同行者。</p>
@@ -180,11 +180,29 @@
       <p class="body-copy mb-8 text-v-titanium text-sm" data-lang-cn="">VERTU 在数字界面中运用色彩的可视化表现。黑色主导版面，金色与红宝石色提供选择性强调。</p>
         <div class="color-chart-container">
         <div class="color-chart">
-          <div class="color-chart-segment color-chart-segment-65" data-i18n-text="colorDistribution65">65% VERTU Black</div>
-          <div class="color-chart-segment color-chart-segment-20" data-i18n-text="colorDistribution20">20% Charcoal</div>
-          <div class="color-chart-segment color-chart-segment-10" data-i18n-text="colorDistribution10">10% Gold</div>
-          <div class="color-chart-segment color-chart-segment-5" data-i18n-text="colorDistribution5">5% Ruby</div>
+          <div class="color-chart-segment color-chart-segment-65" data-i18n-aria="colorDistribution65">
+            <span class="color-chart-segment-value" aria-hidden="true">65%</span>
+            <span class="sr-only" data-i18n-text="colorDistribution65">65% VERTU Black</span>
+          </div>
+          <div class="color-chart-segment color-chart-segment-20" data-i18n-aria="colorDistribution20">
+            <span class="color-chart-segment-value" aria-hidden="true">20%</span>
+            <span class="sr-only" data-i18n-text="colorDistribution20">20% Charcoal</span>
+          </div>
+          <div class="color-chart-segment color-chart-segment-10" data-i18n-aria="colorDistribution10">
+            <span class="color-chart-segment-value" aria-hidden="true">10%</span>
+            <span class="sr-only" data-i18n-text="colorDistribution10">10% Gold</span>
+          </div>
+          <div class="color-chart-segment color-chart-segment-5" data-i18n-aria="colorDistribution5">
+            <span class="color-chart-segment-value" aria-hidden="true">5%</span>
+            <span class="sr-only" data-i18n-text="colorDistribution5">5% Ruby</span>
+          </div>
         </div>
+        <ul class="color-chart-legend">
+          <li class="color-chart-legend-item"><span class="color-chart-legend-swatch color-chart-legend-swatch-65" aria-hidden="true"></span><span data-i18n-text="colorDistribution65">65% VERTU Black</span></li>
+          <li class="color-chart-legend-item"><span class="color-chart-legend-swatch color-chart-legend-swatch-20" aria-hidden="true"></span><span data-i18n-text="colorDistribution20">20% Charcoal</span></li>
+          <li class="color-chart-legend-item"><span class="color-chart-legend-swatch color-chart-legend-swatch-10" aria-hidden="true"></span><span data-i18n-text="colorDistribution10">10% Gold</span></li>
+          <li class="color-chart-legend-item"><span class="color-chart-legend-swatch color-chart-legend-swatch-5" aria-hidden="true"></span><span data-i18n-text="colorDistribution5">5% Ruby</span></li>
+        </ul>
       </div>
     </div>
   <div class="reveal reveal-d1 bento-card bento-col-12 flex flex-col">
@@ -335,7 +353,7 @@
         <p class="body-copy" data-lang-cn="">产品图像采用暗调、低调照明与可控的镜面高光。背景为深黑色（#080808）或暗色渐变。产品通过自身材质的存在感吸引注意: 光线是揭示，而非表演。如同品牌本身，图像请你更仔细地看，而不是更快地滑过。</p>
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Principles</span><span data-lang-cn="">核心原则</span></span>
-        <div class="keyword-row"><span class="keyword">Tactile</span><span class="keyword">Low-key</span><span class="keyword">Material-first</span><span class="keyword">Warm highlights</span><span class="keyword">Quiet drama</span></div>
+        <div class="keyword-row"><span class="keyword" data-i18n-text="photoKeywordTactile">Tactile</span><span class="keyword" data-i18n-text="photoKeywordLowKey">Low-key</span><span class="keyword" data-i18n-text="photoKeywordMaterialFirst">Material-first</span><span class="keyword" data-i18n-text="photoKeywordWarmHighlights">Warm highlights</span><span class="keyword" data-i18n-text="photoKeywordQuietDrama">Quiet drama</span></div>
         <p class="body-copy" data-lang-en="">Avoid: clinical white backgrounds, over-retouched skin, harsh direct flash, visible competitor branding, cluttered compositions. Every frame should breathe: generous negative space is a VERTU hallmark, a visual insistence that there is no rush.</p>
         <p class="body-copy" data-lang-cn="">避免：临床感白色背景、过度修图的皮肤、刺目的直闪、可见的竞品标识、杂乱的构图。每一帧画面都应留有呼吸空间: 充裕的负空间是 VERTU 的标志性特征，是对「无需匆忙」的视觉宣言。</p>
       </div></div></section>
@@ -443,15 +461,23 @@
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Buttons</span><span data-lang-cn="">按钮</span></span>
         
-      <div class="glass-panel mt-8 w-full max-w-2xl mx-auto">
-    <div class="flex flex-col items-center gap-2">
-      <span class="comp-label mb-2" data-i18n-text="componentOutlinedPrimaryLabel">Outlined: Primary</span>
-      <button class="vertu-btn" type="button" data-i18n-text="componentExploreCollection">Explore Collection</button>
-    </div>
-    <div class="flex flex-col items-center gap-2 mt-4">
-      <span class="comp-label mb-2" data-i18n-text="componentFilledCtaLabel">Filled: CTA</span>
-      <button class="vertu-btn vertu-btn--filled" type="button" data-i18n-text="componentAddToBag">Add to Bag</button>
-    </div>
+      <div class="glass-panel mt-8 w-full max-w-3xl mx-auto component-specimens">
+    <article class="component-specimen">
+      <div class="component-specimen__caption">
+        <span class="comp-label" data-i18n-text="componentOutlinedPrimaryLabel">Outlined — Primary</span>
+      </div>
+      <button class="vertu-btn component-specimen__control" type="button">
+        <span data-lang-en="">Explore Collection</span><span data-lang-cn="">探索系列</span>
+      </button>
+    </article>
+    <article class="component-specimen">
+      <div class="component-specimen__caption">
+        <span class="comp-label" data-i18n-text="componentFilledCtaLabel">Filled — CTA</span>
+      </div>
+      <button class="vertu-btn vertu-btn--filled component-specimen__control" type="button">
+        <span data-lang-en="">Add to Bag</span><span data-lang-cn="">加入购物袋</span>
+      </button>
+    </article>
   </div>
 
       </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
@@ -468,7 +494,8 @@
       
     <div class="bento-grid mt-12"><div class="reveal reveal-d1 bento-card bento-col-6 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Contrast Ratios: Dark Mode (verified)</span><span data-lang-cn="">对比度: 深色模式（已验证）</span></span>
-        <div class="contrast-table-wrapper"><table class="contrast-table">
+        <div class="contrast-data-stack">
+        <div class="contrast-table-wrapper contrast-table-desktop"><table class="contrast-table">
           <thead><tr><th scope="col" data-i18n-text="accessibilityForeground">Foreground</th><th scope="col" data-i18n-text="accessibilityBackground">Background</th><th scope="col" data-i18n-text="accessibilityRatio">Ratio</th><th scope="col" data-i18n-text="accessibilitySample">Sample</th><th scope="col" data-i18n-text="accessibilityAa">AA</th><th scope="col" data-i18n-text="accessibilityAaa">AAA</th></tr></thead>
           <tbody>
             <tr><th scope="row">Cream #F2EDE5</th><td>Black #080808</td><td>16.2:1</td><td><span class="sample sample-cream-on-black">Aa</span></td><td><span class="pass" data-i18n-text="accessibilityPass">PASS</span></td><td><span class="pass" data-i18n-text="accessibilityPass">PASS</span></td></tr>
@@ -478,17 +505,29 @@
             <tr><th scope="row">Gold Deep #C4A55E</th><td>Charcoal #111111</td><td>7.1:1</td><td><span class="sample sample-gold-deep-on-charcoal">Aa</span></td><td><span class="pass" data-i18n-text="accessibilityPass">PASS</span></td><td><span class="pass" data-i18n-text="accessibilityPass">PASS</span></td></tr>
           </tbody>
         </table></div>
-
-    <div class="mt-12 mb-4 flex flex-col items-center w-full">
-        <div class="gauge-container">
-        <div class="gauge-arc"></div>
-        <div class="gauge-mask"></div>
-        <div class="gauge-needle"></div>
-        <div class="absolute bottom-2 w-full text-center font-mono text-xs text-success font-bold tracking-widest" data-i18n-text="accessibilityStatusLabel">WCAG 2.2 AA PASS</div>
+        <div class="contrast-card-list contrast-table-mobile">
+          <article class="contrast-card"><div class="contrast-card__colors"><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityForeground">Foreground</p><p class="contrast-card__value">Cream #F2EDE5</p></div><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityBackground">Background</p><p class="contrast-card__value">Black #080808</p></div></div><div class="contrast-card__meta"><p><span class="contrast-card__eyebrow" data-i18n-text="accessibilityRatio">Ratio</span><span class="contrast-card__ratio">16.2:1</span></p><span class="sample sample-cream-on-black">Aa</span></div><div class="contrast-card__status"><span class="pass" data-i18n-text="accessibilityPass">PASS</span><span class="pass" data-i18n-text="accessibilityPass">PASS</span></div></article>
+          <article class="contrast-card"><div class="contrast-card__colors"><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityForeground">Foreground</p><p class="contrast-card__value">Gold #D4B978</p></div><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityBackground">Background</p><p class="contrast-card__value">Black #080808</p></div></div><div class="contrast-card__meta"><p><span class="contrast-card__eyebrow" data-i18n-text="accessibilityRatio">Ratio</span><span class="contrast-card__ratio">9.2:1</span></p><span class="sample sample-gold-on-black">Aa</span></div><div class="contrast-card__status"><span class="pass" data-i18n-text="accessibilityPass">PASS</span><span class="pass" data-i18n-text="accessibilityPass">PASS</span></div></article>
+          <article class="contrast-card"><div class="contrast-card__colors"><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityForeground">Foreground</p><p class="contrast-card__value">Titanium #B5AFA7</p></div><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityBackground">Background</p><p class="contrast-card__value">Black #080808</p></div></div><div class="contrast-card__meta"><p><span class="contrast-card__eyebrow" data-i18n-text="accessibilityRatio">Ratio</span><span class="contrast-card__ratio">7.8:1</span></p><span class="sample sample-titanium-on-black">Aa</span></div><div class="contrast-card__status"><span class="pass" data-i18n-text="accessibilityPass">PASS</span><span class="pass" data-i18n-text="accessibilityPass">PASS</span></div></article>
+          <article class="contrast-card"><div class="contrast-card__colors"><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityForeground">Foreground</p><p class="contrast-card__value">Ruby #D4364E</p></div><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityBackground">Background</p><p class="contrast-card__value">Black #080808</p></div></div><div class="contrast-card__meta"><p><span class="contrast-card__eyebrow" data-i18n-text="accessibilityRatio">Ratio</span><span class="contrast-card__ratio">4.6:1</span></p><span class="sample sample-ruby-on-black">Aa</span></div><div class="contrast-card__status"><span class="pass" data-i18n-text="accessibilityPass">PASS</span><span class="fail" data-i18n-text="accessibilityFail">FAIL</span></div></article>
+          <article class="contrast-card"><div class="contrast-card__colors"><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityForeground">Foreground</p><p class="contrast-card__value">Gold Deep #C4A55E</p></div><div><p class="contrast-card__eyebrow" data-i18n-text="accessibilityBackground">Background</p><p class="contrast-card__value">Charcoal #111111</p></div></div><div class="contrast-card__meta"><p><span class="contrast-card__eyebrow" data-i18n-text="accessibilityRatio">Ratio</span><span class="contrast-card__ratio">7.1:1</span></p><span class="sample sample-gold-deep-on-charcoal">Aa</span></div><div class="contrast-card__status"><span class="pass" data-i18n-text="accessibilityPass">PASS</span><span class="pass" data-i18n-text="accessibilityPass">PASS</span></div></article>
+        </div>
       </div>
-      <p class="text-v-titanium text-xs font-mono mt-4" data-i18n-text="accessibilityContrastTarget">Contrast Target: 16.2:1 (Cream on Black)</p>
+
+    <div class="gauge-summary mt-12 mb-4">
+      <div class="gauge-container-wrapper">
+        <div class="gauge-container" aria-hidden="true">
+          <div class="gauge-arc"></div>
+          <div class="gauge-mask"></div>
+          <div class="gauge-needle"></div>
+        </div>
+      </div>
+      <div class="gauge-readout" role="status" aria-live="polite">
+        <p class="gauge-status" data-i18n-text="accessibilityStatusLabel">WCAG 2.2 AA PASS</p>
+        <p class="gauge-target" data-i18n-text="accessibilityContrastTarget">Contrast Target: 16.2:1 (Cream on Black)</p>
+      </div>
     </div>
-  </div><div class="reveal reveal-d2 bento-card bento-col-6 flex flex-col">
+  </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Key Requirements</span><span data-lang-cn="">关键要求</span></span>
         <div class="guidelines-grid">
           <div class="guideline-card do"><span class="guideline-tag"><span data-lang-en="">Required</span><span data-lang-cn="">必须</span></span><p class="guideline-text" data-lang-en="">Skip-to-content link on every page. Visible 3px gold focus outlines with 3px offset. All images require descriptive alt text.</p><p class="guideline-text" data-lang-cn="">每页须有跳至内容链接。可见的 3px 金色焦点轮廓，偏移 3px。所有图片须有描述性替代文本。</p></div>
@@ -548,24 +587,24 @@
         <span class="sub-label"><span data-lang-en="">Format &amp; Resolution</span><span data-lang-cn="">格式与分辨率</span></span>
         <div class="img-specs-grid">
           <div class="img-spec-card">
-            <div class="img-spec-icon">WEB</div>
-            <div class="img-spec-title">Web: Hero &amp; Banner</div>
-            <div class="img-spec-detail">Format: WebP (fallback JPEG)<br>Resolution: 2560×1440 @2x<br>Max file: 250KB (hero), 120KB (card)<br>Quality: 82–88% JPEG / 80% WebP<br>Colour profile: sRGB</div>
+            <div class="img-spec-icon" data-i18n-text="imgSpecWebIcon">WEB</div>
+            <div class="img-spec-title" data-i18n-text="imgSpecWebTitle">Web: Hero &amp; Banner</div>
+            <div class="img-spec-detail" data-i18n-text="imgSpecWebDetail">Format: WebP (fallback JPEG)<br>Resolution: 2560×1440 @2x<br>Max file: 250KB (hero), 120KB (card)<br>Quality: 82–88% JPEG / 80% WebP<br>Colour profile: sRGB</div>
           </div>
           <div class="img-spec-card">
-            <div class="img-spec-icon">PDP</div>
-            <div class="img-spec-title">Product Detail Pages</div>
-            <div class="img-spec-detail">Format: WebP / AVIF<br>Resolution: 1600×1600 @2x square<br>Background: #080808 (VERTU Black)<br>Max file: 180KB per image<br>Zoom: Supply 4000×4000 source</div>
+            <div class="img-spec-icon" data-i18n-text="imgSpecPdpIcon">PDP</div>
+            <div class="img-spec-title" data-i18n-text="imgSpecPdpTitle">Product Detail Pages</div>
+            <div class="img-spec-detail" data-i18n-text="imgSpecPdpDetail">Format: WebP / AVIF<br>Resolution: 1600×1600 @2x square<br>Background: #080808 (VERTU Black)<br>Max file: 180KB per image<br>Zoom: Supply 4000×4000 source</div>
           </div>
           <div class="img-spec-card">
-            <div class="img-spec-icon">SOC</div>
-            <div class="img-spec-title">Social Media</div>
-            <div class="img-spec-detail">Instagram: 1080×1350 (4:5 portrait)<br>WeChat: 900×500 (article cover)<br>Weibo: 1080×1080 (square)<br>Stories/Reels: 1080×1920 (9:16)<br>Format: JPEG, max 500KB</div>
+            <div class="img-spec-icon" data-i18n-text="imgSpecSocIcon">SOC</div>
+            <div class="img-spec-title" data-i18n-text="imgSpecSocTitle">Social Media</div>
+            <div class="img-spec-detail" data-i18n-text="imgSpecSocDetail">Instagram: 1080×1350 (4:5 portrait)<br>WeChat: 900×500 (article cover)<br>Weibo: 1080×1080 (square)<br>Stories/Reels: 1080×1920 (9:16)<br>Format: JPEG, max 500KB</div>
           </div>
           <div class="img-spec-card">
-            <div class="img-spec-icon">PRT</div>
-            <div class="img-spec-title">Print &amp; Packaging</div>
-            <div class="img-spec-detail">Resolution: 300 DPI minimum<br>Colour: CMYK + spot (PMS 871 C)<br>Format: TIFF (uncompressed)<br>Bleed: 3mm all sides<br>Embed ICC profile: Fogra39</div>
+            <div class="img-spec-icon" data-i18n-text="imgSpecPrtIcon">PRT</div>
+            <div class="img-spec-title" data-i18n-text="imgSpecPrtTitle">Print &amp; Packaging</div>
+            <div class="img-spec-detail" data-i18n-text="imgSpecPrtDetail">Resolution: 300 DPI minimum<br>Colour: CMYK + spot (PMS 871 C)<br>Format: TIFF (uncompressed)<br>Bleed: 3mm all sides<br>Embed ICC profile: Fogra39</div>
           </div>
         </div>
       </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col">
@@ -573,11 +612,11 @@
         <p class="body-copy" data-lang-en="">Standard aspect ratios for VERTU imagery. Use these consistently to maintain visual rhythm across layouts.</p>
         <p class="body-copy" data-lang-cn="">VERTU 图片标准宽高比例。请一致使用以保持布局的视觉韵律。</p>
         <div class="aspect-demos">
-          <div class="aspect-box aspect-hero"><span>16:9 Hero</span></div>
-          <div class="aspect-box aspect-product"><span>1:1 Product</span></div>
-          <div class="aspect-box aspect-social"><span>4:5 Social</span></div>
-          <div class="aspect-box aspect-stories"><span>9:16 Stories</span></div>
-          <div class="aspect-box aspect-cinematic"><span>21:9 Cinematic</span></div>
+          <div class="aspect-box aspect-hero"><span data-i18n-text="aspectHero">16:9 Hero</span></div>
+          <div class="aspect-box aspect-product"><span data-i18n-text="aspectProduct">1:1 Product</span></div>
+          <div class="aspect-box aspect-social"><span data-i18n-text="aspectSocial">4:5 Social</span></div>
+          <div class="aspect-box aspect-stories"><span data-i18n-text="aspectStories">9:16 Stories</span></div>
+          <div class="aspect-box aspect-cinematic"><span data-i18n-text="aspectCinematic">21:9 Cinematic</span></div>
         </div>
       </div><div class="reveal reveal-d3 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Art Direction: Do's &amp; Don'ts</span><span data-lang-cn="">美术指导: 规范示例</span></span>
@@ -862,7 +901,7 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
           
           <!-- Preview Canvas -->
           <div class="flex-1 flex flex-col items-center justify-center rounded-xl border overflow-hidden relative min-h-[300px] gen-preview-surface">
-            <canvas id="gen-canvas" class="max-w-full h-auto shadow-2xl transition-all duration-300" role="img" aria-label="Logo generator preview"></canvas>
+            <canvas id="gen-canvas" class="max-w-full h-auto shadow-2xl transition-all duration-300" role="img" data-i18n-aria="logoGeneratorPreview" aria-label="Logo generator preview"></canvas>
             <span class="absolute bottom-3 right-3 text-[10px] font-mono text-base-content/50 bg-base-300/80 px-2 py-1 rounded"><span data-lang-en="">Live Preview</span><span data-lang-cn="">实时预览</span></span>
           </div>
         </div>
@@ -894,96 +933,83 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
             <div class="download-meta">PNG · <span data-lang-en="">Transparent · Dark BG</span><span data-lang-cn="">透明 · 深色背景</span></div>
           </button>
         </div>
-      </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col">
-        <span class="sub-label"><span data-lang-en="">Templates</span><span data-lang-cn="">模板文件</span></span>
-        <div class="download-grid">
-          <button type="button" class="download-card w-full text-left" id="dl-pptx" data-i18n-aria="downloadPptxAria">
-            <div class="download-icon">.pptx</div>
-            <div class="download-name"><span data-lang-en="">Presentation Template</span><span data-lang-cn="">演示文稿模板</span></div>
-            <div class="download-meta"><span data-lang-en="">9 slides · Gold masters · 16:9</span><span data-lang-cn="">9页幻灯片 · 金色母版 · 16:9</span></div>
-          </button>
-          <button type="button" class="download-card w-full text-left" id="dl-docx" data-i18n-aria="downloadDocxAria">
-            <div class="download-icon">.docx</div>
-            <div class="download-name"><span data-lang-en="">Letterhead Template</span><span data-lang-cn="">信纸模板</span></div>
-            <div class="download-meta"><span data-lang-en="">Premium · Gold borders · US Letter</span><span data-lang-cn="">精品版 · 金色边框 · US Letter</span></div>
-          </button>
-          <button type="button" class="download-card w-full text-left" id="dl-guide" data-i18n-aria="downloadGuideAria">
-            <div class="download-icon">.html</div>
-            <div class="download-name"><span data-lang-en="">This Brand Guide</span><span data-lang-cn="">本品牌指南</span></div>
-            <div class="download-meta"><span data-lang-en="">Interactive · EN/中文 · Offline</span><span data-lang-cn="">交互式 · 中英双语 · 离线可用</span></div>
-          </button>
-        </div>
+      </div><div class="reveal reveal-d2 bento-card bento-col-12 flex flex-col" data-template-library-panel>
       </div><div class="reveal reveal-d3 bento-card bento-col-12 flex flex-col">
         <span class="sub-label mb-2 block text-v-titanium tracking-widest text-xs uppercase"><span data-lang-en="">Social Media Templates</span><span data-lang-cn="">社交媒体模板</span></span>
         <p class="body-copy text-sm text-v-titanium mb-6" data-lang-en="">Generate on-brand social media assets for Instagram, LinkedIn, and X/Twitter. Configure format, theme, and headline: then export a high-resolution PNG.</p>
         <p class="body-copy text-sm text-v-titanium mb-6" data-lang-cn="">生成符合品牌规范的社交媒体资产，适用于 Instagram、LinkedIn 和 X/Twitter。配置格式、主题及标语，导出高分辨率 PNG。</p>
 
-        <div class="flex flex-col xl:flex-row gap-8 w-full mb-8">
-          <!-- Social Controls -->
-          <div class="flex flex-col gap-6 xl:flex-1 bg-base-200 p-6 rounded-xl border border-base-300">
-            <div class="form-control w-full">
-              <label for="social-format" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Format</span><span data-lang-cn="">格式</span></span></label>
-              <select id="social-format" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
-                <option value="ig-post">Instagram Post (1080×1080)</option>
-                <option value="ig-story">Instagram Story (1080×1920)</option>
-                <option value="linkedin">LinkedIn Post (1200×627)</option>
-                <option value="x-header">X / Twitter Header (1500×500)</option>
-              </select>
-            </div>
+        <form
+          id="social-toolkit-form"
+          class="social-toolkit-controls"
+          action="/social/preview"
+          method="get"
+          hx-get="/social/preview"
+          hx-indicator="#guide-request-indicator"
+          hx-disabled-elt="find select"
+          hx-swap="innerHTML"
+          hx-target="#social-preview-panel"
+          hx-trigger="submit"
+          hx-sync="this:replace"
+        >
+          <input type="hidden" id="social-language" name="lang" value="en">
+          <input type="hidden" id="social-section" name="section" value="s15">
 
-            <div class="form-control w-full">
-              <label for="social-theme" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Theme</span><span data-lang-cn="">主题</span></span></label>
-              <select id="social-theme" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
-                <option value="dark"><span data-lang-en="">Dark: Black + Gold</span></option>
-                <option value="light"><span data-lang-en="">Light: Ivory + Gold</span></option>
-                <option value="gold"><span data-lang-en="">Gold: Gold + Black</span></option>
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label for="social-headline" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Headline</span><span data-lang-cn="">标语</span></span></label>
-              <input type="text" id="social-headline" maxlength="48" placeholder="Crafted Beyond Measure" class="input input-bordered input-sm w-full bg-base-300 border-base-300 text-base-content placeholder:text-base-content/30">
-            </div>
-
-            <div class="form-control w-full">
-              <label for="social-subline" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Subline (optional)</span><span data-lang-cn="">副标语（选填）</span></span></label>
-              <input type="text" id="social-subline" maxlength="72" placeholder="VERTU England" class="input input-bordered input-sm w-full bg-base-300 border-base-300 text-base-content placeholder:text-base-content/30">
-            </div>
-
-            <button id="social-download-btn" class="vertu-btn vertu-btn--filled mt-4 w-full"><span data-lang-en="">Generate &amp; Download</span><span data-lang-cn="">生成并下载</span></button>
+          <div class="form-control w-full">
+            <label for="social-pack" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Campaign Preset</span><span data-lang-cn="">活动预设</span></span></label>
+            <select id="social-pack" name="pack" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
+              <option value="campaign-signature" data-i18n-text="socialPackSignature">Signature Campaign Toolkit</option>
+              <option value="campaign-launch" data-i18n-text="socialPackLaunch">Agent Q Collector Release</option>
+              <option value="campaign-event" data-i18n-text="socialPackEvent">Private Preview Evening</option>
+            </select>
           </div>
 
-          <!-- Social Preview Canvas -->
-          <div class="flex-1 flex flex-col items-center justify-center rounded-xl border overflow-hidden relative min-h-[280px] social-preview-surface">
-            <canvas id="social-canvas" class="max-w-full h-auto shadow-2xl transition-all duration-300" role="img" aria-label="Social media template preview"></canvas>
-            <span class="absolute bottom-3 right-3 text-[10px] font-mono text-base-content/50 bg-base-300/80 px-2 py-1 rounded"><span data-lang-en="">Live Preview</span><span data-lang-cn="">实时预览</span></span>
+          <div class="form-control w-full">
+            <label for="social-format" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Asset Type</span><span data-lang-cn="">素材类型</span></span></label>
+            <select id="social-format" name="asset" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
+              <option value="og-card" data-i18n-text="socialAssetKindOgCard">Open Graph Card (1200×630)</option>
+              <option value="ig-post" data-i18n-text="socialAssetKindIgPost">Instagram Post (1080×1080)</option>
+              <option value="ig-story" data-i18n-text="socialAssetKindIgStory">Instagram Story (1080×1920)</option>
+              <option value="linkedin-post" data-i18n-text="socialAssetKindLinkedin">LinkedIn Post (1200×627)</option>
+              <option value="x-header" data-i18n-text="socialAssetKindXHeader">X / Twitter Header (1500×500)</option>
+              <option value="docs-header" data-i18n-text="socialAssetKindDocsHeader">Docs / Blog Header (1600×675)</option>
+              <option value="announcement-card" data-i18n-text="socialAssetKindAnnouncement">Announcement Card (1200×1200)</option>
+              <option value="quote-card" data-i18n-text="socialAssetKindQuote">Quote Card (1080×1350)</option>
+              <option value="event-invite" data-i18n-text="socialAssetKindEventInvite">Event Invite (1080×1350)</option>
+            </select>
           </div>
-        </div>
 
-        <!-- Preset quick-download cards -->
-        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-en="">Quick Export: Dark Theme</p>
-        <p class="body-copy text-xs text-v-titanium font-mono uppercase tracking-widest mb-4" data-lang-cn="">快速导出: 深色主题</p>
-        <div class="download-grid">
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-post" data-theme="dark" data-i18n-aria="socialPresetIgPostDarkAria">
-            <div class="download-icon">IG</div>
-            <div class="download-name"><span data-lang-en="">Instagram Post</span><span data-lang-cn="">Instagram 帖子</span></div>
-            <div class="download-meta" data-i18n-text="socialPresetIgPostDarkMeta">PNG · 1080×1080 · Dark</div>
-          </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="ig-story" data-theme="dark" data-i18n-aria="socialPresetIgStoryDarkAria">
-            <div class="download-icon">IS</div>
-            <div class="download-name"><span data-lang-en="">Instagram Story</span><span data-lang-cn="">Instagram 限时动态</span></div>
-            <div class="download-meta" data-i18n-text="socialPresetIgStoryDarkMeta">PNG · 1080×1920 · Dark</div>
-          </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="linkedin" data-theme="dark" data-i18n-aria="socialPresetLinkedinDarkAria">
-            <div class="download-icon">LI</div>
-            <div class="download-name"><span data-lang-en="">LinkedIn Post</span><span data-lang-cn="">LinkedIn 帖子</span></div>
-            <div class="download-meta" data-i18n-text="socialPresetLinkedinDarkMeta">PNG · 1200×627 · Dark</div>
-          </button>
-          <button type="button" class="download-card w-full text-left social-preset-btn" data-format="x-header" data-theme="dark" data-i18n-aria="socialPresetXHeaderDarkAria">
-            <div class="download-icon">XH</div>
-            <div class="download-name"><span data-lang-en="">X / Twitter Header</span><span data-lang-cn="">X / Twitter 封面</span></div>
-            <div class="download-meta" data-i18n-text="socialPresetXHeaderDarkMeta">PNG · 1500×500 · Dark</div>
-          </button>
+          <div class="form-control w-full">
+            <label for="social-approved-asset" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Approved Asset</span><span data-lang-cn="">批准素材</span></span></label>
+            <select id="social-approved-asset" name="approvedAsset" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
+              <option value="signature-black-red" data-i18n-text="socialApprovedAssetSignature">Signature Black / Red</option>
+              <option value="agent-q" data-i18n-text="socialApprovedAssetAgentQ">Agent Q Collector</option>
+              <option value="quantum-flip" data-i18n-text="socialApprovedAssetQuantumFlip">Quantum Flip</option>
+            </select>
+          </div>
+
+          <div class="form-control w-full">
+            <label for="social-theme" class="label"><span class="label-text text-base-content font-mono text-xs uppercase tracking-widest"><span data-lang-en="">Theme</span><span data-lang-cn="">主题</span></span></label>
+            <select id="social-theme" name="theme" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content">
+              <option value="dark" data-i18n-text="socialThemeDark">Dark: Black + Gold</option>
+              <option value="light" data-i18n-text="socialThemeLight">Light: Ivory + Gold</option>
+              <option value="gold" data-i18n-text="socialThemeGold">Gold: Gold + Black</option>
+            </select>
+          </div>
+        </form>
+
+        <div
+          id="social-preview-panel"
+          class="social-preview-region"
+          data-social-state="idle"
+          role="region"
+          aria-live="polite"
+          data-i18n-aria="socialToolkitPreviewAria"
+          aria-label="Campaign toolkit preview"
+        >
+          <div class="social-preview-idle social-preview-feedback social-preview-feedback--idle">
+            <p class="body-copy text-sm text-base-content/80" data-i18n-text="socialToolkitPreviewIdle">Choose a campaign pack to load the server-rendered preview and download manifest.</p>
+          </div>
         </div>
       </div><div class="reveal reveal-d4 bento-card bento-col-12 flex flex-col">
         <span class="sub-label"><span data-lang-en="">Design Tokens</span><span data-lang-cn="">设计令牌</span></span>
@@ -1072,11 +1098,11 @@ document.querySelectorAll(<span class="cs">'.reveal'</span>)
       <div class="w-80 min-h-full bg-base-200 text-base-content flex flex-col h-full border-r border-base-300">
         <div class="p-6 sticky top-0 bg-base-200 z-10 border-b border-base-300 flex justify-between items-center">
             <p class="text-2xl font-bold tracking-[0.2em] uppercase">VERTU</p>
-            <button id="drawerCloseButton" type="button" data-i18n-aria="closeSidebar" class="btn btn-sm btn-square btn-ghost lg:hidden" aria-controls="brand-drawer" aria-expanded="false">
+            <label id="drawerCloseButton" for="brand-drawer" data-i18n-aria="closeSidebar" class="btn btn-sm btn-square btn-ghost lg:hidden" aria-controls="brand-drawer" aria-expanded="false" role="button" tabindex="0">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="inline-block h-5 w-5 fill-none stroke-current" fill="none" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6L18 18M6 18L18 6"></path>
               </svg>
-            </button>
+            </label>
         </div>
         
         <!-- Navigation Menu -->
