@@ -26,7 +26,6 @@ let toastTimer = 0;
 let lastDrawerTrigger: HTMLElement | null = null;
 let pendingViewportSyncFrame = 0;
 let lastAnchoredViewKey = "";
-const assetAvailabilityCache = new Map<string, Promise<boolean>>();
 
 const isGuideDownloadId = (value: string): value is GuideDownloadId => value in GUIDE_DOWNLOADS;
 
@@ -145,20 +144,11 @@ const handleDocumentClick = (event: Event): void => {
     return;
   }
 
-  const downloadCard = target.closest<HTMLElement>(".download-card[id]");
+  const downloadCard = target.closest<HTMLAnchorElement>('a.download-card[id][download]');
   if (downloadCard && isGuideDownloadId(downloadCard.id)) {
-    event.preventDefault();
     const download = GUIDE_DOWNLOADS[downloadCard.id];
-    void probeAssetAvailability(download.href).then((isAvailable) => {
-      if (!isAvailable) {
-        showToast(shellDataset("toastAssetUnavailable"));
-        return;
-      }
-
-      triggerDownload(download.href, download.fileName);
-      const prefix = shellDataset(download.toastDatasetKey);
-      showToast(prefix ? `${prefix}: ${download.fileName}` : download.fileName);
-    });
+    const prefix = shellDataset(download.toastDatasetKey);
+    showToast(prefix ? `${prefix}: ${download.fileName}` : download.fileName);
   }
 };
 
@@ -256,7 +246,7 @@ const syncDocumentState = (): void => {
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : theme;
   document.documentElement.setAttribute("data-theme", effectiveTheme);
-  document.documentElement.lang = language === "zh" ? "zh" : "en";
+  document.documentElement.lang = language === "zh" ? "zh" : language === "bi" ? "mul" : "en";
 };
 
 const syncDrawerState = (): void => {
@@ -734,28 +724,6 @@ const copyToClipboard = (text: string): Promise<boolean> => {
 
 const setTextContent = (element: HTMLElement, value: string): void => {
   element.textContent = value;
-};
-
-const probeAssetAvailability = (href: string): Promise<boolean> => {
-  const cachedResponse = assetAvailabilityCache.get(href);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  const request = fetch(href, { cache: "no-store", method: "HEAD" }).then(
-    (response) => response.ok,
-    () => false
-  );
-  const stableRequest = request.then((isAvailable) => {
-    if (!isAvailable) {
-      assetAvailabilityCache.delete(href);
-    }
-
-    return isAvailable;
-  });
-
-  assetAvailabilityCache.set(href, stableRequest);
-  return stableRequest;
 };
 
 /**

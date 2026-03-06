@@ -40,6 +40,7 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
       ? `${resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`
       : `${sectionTitle ?? resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`;
   const socialPreset = resolveSectionSocialPreset(viewState.section);
+  const canonicalHref = resolveCanonicalGuideHref(viewState, requestOrigin, requestQuery);
   const socialImageHref = toSocialAssetHref(
     {
       approvedAssetId: SOCIAL_PRESET_REGISTRY[socialPreset].approvedAssetId,
@@ -55,12 +56,13 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
 
   return [
     "<!DOCTYPE html>",
-    `<html lang="${viewState.language === "zh" ? "zh" : "en"}" data-theme="${viewState.theme}" data-lang="${viewState.language}">`,
+    `<html lang="${resolveDocumentLanguageTag(viewState.language)}" data-theme="${viewState.theme}" data-lang="${viewState.language}">`,
     "<head>",
     '  <meta charset="UTF-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
     `  <meta name="description" content="${escapeAttribute(description)}">`,
     `  <meta name="htmx-config" content="${escapeAttribute(htmxConfig)}">`,
+    `  <meta property="og:url" content="${escapeAttribute(canonicalHref)}">`,
     `  <meta property="og:title" content="${escapeAttribute(title)}">`,
     `  <meta property="og:description" content="${escapeAttribute(description)}">`,
     '  <meta property="og:type" content="website">',
@@ -69,7 +71,7 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
     '  <meta property="og:image:height" content="630">',
     '  <meta name="twitter:card" content="summary_large_image">',
     `  <meta name="twitter:image" content="${escapeAttribute(socialImageHref)}">`,
-    `  <link rel="canonical" href="${GUIDE_ROUTES.guide}">`,
+    `  <link rel="canonical" href="${escapeAttribute(canonicalHref)}">`,
     `  <title>${escapeHtml(title)}</title>`,
     `  <link href="${GUIDE_ROUTES.stylesheet}" rel="stylesheet">`,
     `  <script src="${GUIDE_ROUTES.clientScript}" type="module" defer></script>`,
@@ -343,11 +345,14 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
     socialTheme: socialQuery.socialTheme,
   });
   const themeAriaLabel =
-    viewState.theme === "dark"
-      ? resolveCopy("themeDark", viewState.language)
-      : viewState.theme === "light"
-        ? resolveCopy("themeLight", viewState.language)
-        : resolveCopy("themeSystem", viewState.language);
+    resolveCopy("toggleThemeTo", viewState.language, {
+      value:
+        nextTheme === "dark"
+          ? resolveCopy("themeDark", viewState.language)
+          : nextTheme === "light"
+            ? resolveCopy("themeLight", viewState.language)
+            : resolveCopy("themeSystem", viewState.language),
+    });
 
   const langCycleHref = toSocialGuideHref({
     approvedAssetId: socialQuery.approvedAssetId,
@@ -359,11 +364,14 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
     socialTheme: socialQuery.socialTheme,
   });
   const langAriaLabel =
-    viewState.language === "en"
-      ? resolveCopy("languageEnglish", viewState.language)
-      : viewState.language === "zh"
-        ? resolveCopy("languageChinese", viewState.language)
-        : resolveCopy("languageBilingual", viewState.language);
+    resolveCopy("toggleLanguageTo", viewState.language, {
+      value:
+        nextLang === "en"
+          ? resolveCopy("languageEnglish", viewState.language)
+          : nextLang === "zh"
+            ? resolveCopy("languageChinese", viewState.language)
+            : resolveCopy("languageBilingual", viewState.language),
+    });
 
   return `
   <div class="guide-sidebar-controls">
@@ -375,7 +383,6 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
           class="btn btn-sm guide-control-btn guide-theme-cycle"
           data-guide-theme="${viewState.theme}"
           aria-label="${escapeAttribute(themeAriaLabel)}"
-          aria-current="true"
           hx-get="${themeCycleHref}"
           hx-target="${GUIDE_SELECTORS.page}"
           hx-swap="${GUIDE_HTMX.pageSwap}"
@@ -393,7 +400,6 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
           class="btn btn-sm guide-control-btn guide-lang-cycle"
           data-guide-language="${viewState.language}"
           aria-label="${escapeAttribute(langAriaLabel)}"
-          aria-current="true"
           hx-get="${langCycleHref}"
           hx-target="${GUIDE_SELECTORS.page}"
           hx-swap="${GUIDE_HTMX.pageSwap}"
@@ -465,6 +471,30 @@ const renderGuideCoverTitle = (): string =>
 
 const inlineCopy = (copy: LocalizedCopy, language: GuideViewState["language"]): string =>
   language === "zh" ? copy.zh : language === "bi" ? `${copy.en} · ${copy.zh}` : copy.en;
+
+const resolveDocumentLanguageTag = (language: GuideViewState["language"]): string =>
+  language === "zh" ? "zh" : language === "bi" ? "mul" : "en";
+
+const resolveCanonicalGuideHref = (
+  viewState: GuideViewState,
+  requestOrigin: string,
+  requestQuery: URLSearchParams
+): string => {
+  const socialQuery = resolveGuideSocialQueryValues(requestQuery);
+
+  return new URL(
+    toSocialGuideHref({
+      approvedAssetId: socialQuery.approvedAssetId,
+      assetKind: socialQuery.assetKind,
+      guideTheme: viewState.theme,
+      language: viewState.language,
+      packId: socialQuery.packId,
+      section: viewState.section,
+      socialTheme: socialQuery.socialTheme,
+    }),
+    requestOrigin
+  ).toString();
+};
 
 const resolveCoverLogoPath = (theme: GuideViewState["theme"]): string =>
   theme === "light" ? GUIDE_BRAND_ASSETS.logoBlack : GUIDE_BRAND_ASSETS.logoWhite;

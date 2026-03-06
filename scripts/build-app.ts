@@ -4,7 +4,9 @@ import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { GUIDE_PATHS, GUIDE_PUBLIC_DIRECTORIES, GUIDE_PUBLIC_FILES } from "../src/server/runtime-config";
+import { renderDocument } from "../src/server/render/layout";
 import { extractGuideSections, normalizeAuthoringAssetUrls } from "../src/shared/authoring-guide";
+import { GUIDE_SERVER, toGuideRequestUrl } from "../src/shared/config";
 import { writeStructuredLog } from "../src/shared/logger";
 import {
   buildSocialStaticAssetPath,
@@ -14,9 +16,8 @@ import {
   SOCIAL_PRESET_REGISTRY,
 } from "../src/shared/social-toolkit";
 import { prepareSectionMarkup } from "../src/shared/section-markup";
-import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS } from "../src/shared/view-state";
+import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS, resolveGuideViewState } from "../src/shared/view-state";
 import { renderSocialAssetPng, renderSocialCarouselFramePng } from "../src/server/social-renderer";
-import { toGuideRequestUrl } from "../src/shared/config";
 
 const decoder = new TextDecoder();
 const stagingBuildDirectory = `${GUIDE_PATHS.buildDirectory}-next-${process.pid}-${crypto.randomUUID()}`;
@@ -227,13 +228,12 @@ const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, s
 await syncGeneratedOutput(stagingBuildDirectory, GUIDE_PATHS.buildDirectory);
 await rm(stagingBuildDirectory, { force: true, recursive: true });
 
-const { app } = await import("../src/server/app");
-const downloadGuideResponse = await app.handle(new Request(toGuideRequestUrl("/?section=s0&lang=bi&theme=dark")));
-const downloadGuideHtml = await downloadGuideResponse.text();
-
-if (!downloadGuideResponse.ok) {
-  throw new Error(`Failed to generate the canonical HTML guide snapshot. HTTP ${downloadGuideResponse.status}`);
-}
+const snapshotRequestUrl = new URL(toGuideRequestUrl("/?section=s0&lang=bi&theme=dark"));
+const downloadGuideHtml = renderDocument(
+  resolveGuideViewState(snapshotRequestUrl),
+  GUIDE_SERVER.localOrigin,
+  snapshotRequestUrl.searchParams
+);
 
 await Bun.write(GUIDE_PATHS.downloadGuideHtmlOutput, downloadGuideHtml);
 
