@@ -6,11 +6,31 @@
   },
   "steps": {
     "install": {
-      "commands": ["bun install --frozen-lockfile"]
+      "commands": [
+        {
+          "dest": "package.json",
+          "src": "package.json"
+        },
+        {
+          "dest": "bun.lock",
+          "src": "bun.lock"
+        },
+        {
+          "cmd": "bun install --frozen-lockfile"
+        }
+      ]
     },
     "build": {
       "inputs": [{ "step": "install" }],
-      "commands": ["bun run build"]
+      "commands": [
+        {
+          "dest": ".",
+          "src": "."
+        },
+        {
+          "cmd": "bun run build"
+        }
+      ]
     }
   },
   "deploy": {
