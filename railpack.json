@@ -42,7 +42,7 @@
       { "step": "build" }
     ],
     "paths": ["/mise/shims"],
-    "startCommand": "bun run start",
+    "startCommand": "/mise/shims/bun run start",
     "variables": {
       "GUIDE_HOST": "0.0.0.0"
     }
