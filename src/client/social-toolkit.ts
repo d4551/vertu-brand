@@ -1,27 +1,29 @@
-import { toSocialGuideHref } from "../shared/social-toolkit";
-import { isGuideLanguage, isGuideSectionId, normalizeGuideTheme } from "../shared/view-state";
-
-const SOCIAL_TOOLKIT_IDS = {
-  assetKind: "social-format",
-  form: "social-toolkit-form",
-  hiddenLanguage: "social-language",
-  hiddenSection: "social-section",
-  pack: "social-pack",
-  previewPanel: "social-preview-panel",
-  selectTheme: "social-theme",
-} as const;
+import { GUIDE_ASSET_OPERATOR_IDS } from "../shared/asset-operator-contract";
+import {
+  HTMX_BROWSER_EVENTS,
+  resolveHtmxEventTarget,
+  type HtmxAfterSwapEventDetail,
+  type HtmxRequestLifecycleEventDetail,
+} from "../shared/htmx-event-contract";
+import { normalizeGuideSocialPreviewState, toSocialGuideHref } from "../shared/social-toolkit";
+import { resolveGuideState } from "../shared/view-state";
 
 let socialPreviewEventsBound = false;
 let pendingSocialSubmitFrame = 0;
 
 type SocialHistoryMode = "push" | "replace";
 
+const resolveSocialPreviewTarget = (
+  event: CustomEvent<HtmxAfterSwapEventDetail | HtmxRequestLifecycleEventDetail>
+): HTMLElement | null => {
+  const target = resolveHtmxEventTarget(event);
+  return target?.id === GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel ? target : null;
+};
+
 const syncPreviewPanelState = (panel: HTMLElement): void => {
   const stateRoot = panel.querySelector<HTMLElement>("[data-social-state]");
-  const state = stateRoot?.dataset.socialState ?? panel.dataset.socialState ?? "idle";
-  if (state) {
-    panel.dataset.socialState = state;
-  }
+  const state = normalizeGuideSocialPreviewState(stateRoot?.dataset.socialState ?? panel.dataset.socialState);
+  panel.dataset.socialState = state;
   panel.setAttribute("aria-busy", state === "loading" ? "true" : "false");
 };
 
@@ -72,14 +74,14 @@ export interface SocialToolkitDependencies {
  * Syncs social toolkit hidden form fields and initial preview submit behavior.
  */
 export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: SocialToolkitDependencies): void => {
-  const form = document.getElementById(SOCIAL_TOOLKIT_IDS.form);
-  const selectAssetKind = document.getElementById(SOCIAL_TOOLKIT_IDS.assetKind);
-  const hiddenLanguage = document.getElementById(SOCIAL_TOOLKIT_IDS.hiddenLanguage);
-  const hiddenSection = document.getElementById(SOCIAL_TOOLKIT_IDS.hiddenSection);
-  const selectPack = document.getElementById(SOCIAL_TOOLKIT_IDS.pack);
-  const selectApprovedAsset = document.getElementById("social-approved-asset");
-  const selectTheme = document.getElementById(SOCIAL_TOOLKIT_IDS.selectTheme);
-  const previewPanel = document.getElementById(SOCIAL_TOOLKIT_IDS.previewPanel);
+  const form = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialForm);
+  const selectAssetKind = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialAssetKind);
+  const hiddenLanguage = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialHiddenLanguage);
+  const hiddenSection = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialHiddenSection);
+  const selectPack = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialPack);
+  const selectApprovedAsset = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialApprovedAsset);
+  const selectTheme = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialTheme);
+  const previewPanel = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel);
 
   if (
     !(form instanceof HTMLFormElement) ||
@@ -95,33 +97,29 @@ export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: Soci
   }
 
   if (!socialPreviewEventsBound && document.body) {
-    document.body.addEventListener("htmx:afterSwap", (event: Event) => {
-      const detail = event instanceof CustomEvent ? Reflect.get(event, "detail") : null;
-      const target = detail && typeof detail === "object" ? Reflect.get(detail, "target") : null;
-      if (target instanceof HTMLElement && target.id === SOCIAL_TOOLKIT_IDS.previewPanel) {
+    document.body.addEventListener(HTMX_BROWSER_EVENTS.afterSwap, (event) => {
+      const target = resolveSocialPreviewTarget(event);
+      if (target) {
         syncPreviewPanelState(target);
       }
     });
-    document.body.addEventListener("htmx:responseError", (event: Event) => {
-      const detail = event instanceof CustomEvent ? Reflect.get(event, "detail") : null;
-      const target = detail && typeof detail === "object" ? Reflect.get(detail, "target") : null;
-      if (target instanceof HTMLElement && target.id === SOCIAL_TOOLKIT_IDS.previewPanel) {
+    document.body.addEventListener(HTMX_BROWSER_EVENTS.responseError, (event) => {
+      const target = resolveSocialPreviewTarget(event);
+      if (target) {
         target.dataset.socialState = "error";
         target.setAttribute("aria-busy", "false");
       }
     });
-    document.body.addEventListener("htmx:sendError", (event: Event) => {
-      const detail = event instanceof CustomEvent ? Reflect.get(event, "detail") : null;
-      const target = detail && typeof detail === "object" ? Reflect.get(detail, "target") : null;
-      if (target instanceof HTMLElement && target.id === SOCIAL_TOOLKIT_IDS.previewPanel) {
+    document.body.addEventListener(HTMX_BROWSER_EVENTS.sendError, (event) => {
+      const target = resolveSocialPreviewTarget(event);
+      if (target) {
         target.dataset.socialState = "error";
         target.setAttribute("aria-busy", "false");
       }
     });
-    document.body.addEventListener("htmx:timeout", (event: Event) => {
-      const detail = event instanceof CustomEvent ? Reflect.get(event, "detail") : null;
-      const target = detail && typeof detail === "object" ? Reflect.get(detail, "target") : null;
-      if (target instanceof HTMLElement && target.id === SOCIAL_TOOLKIT_IDS.previewPanel) {
+    document.body.addEventListener(HTMX_BROWSER_EVENTS.timeout, (event) => {
+      const target = resolveSocialPreviewTarget(event);
+      if (target) {
         target.dataset.socialState = "error";
         target.setAttribute("aria-busy", "false");
       }
@@ -149,15 +147,14 @@ export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: Soci
   };
 
   const syncFormState = (): string => {
-    const languageValue = resolveGuidePage()?.dataset.language || resolveShell()?.dataset.language || "bi";
-    const sectionValue = resolveGuidePage()?.dataset.activeSection || resolveShell()?.dataset.activeSection || "s0";
-    const guideThemeValue = resolveGuidePage()?.dataset.theme || resolveShell()?.dataset.theme || "dark";
-    const language = isGuideLanguage(languageValue) ? languageValue : "bi";
-    const section = isGuideSectionId(sectionValue) ? sectionValue : "s0";
-    const guideTheme = normalizeGuideTheme(guideThemeValue);
+    const guideState = resolveGuideState({
+      language: resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language,
+      section: resolveGuidePage()?.dataset.activeSection ?? resolveShell()?.dataset.activeSection,
+      theme: resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme,
+    });
 
-    hiddenLanguage.value = language;
-    hiddenSection.value = section;
+    hiddenLanguage.value = guideState.language;
+    hiddenSection.value = guideState.section;
 
     const selectedPackOption = resolveSelectedPackOption(selectPack);
     if (selectedPackOption) {
@@ -180,10 +177,10 @@ export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: Soci
     return toSocialGuideHref({
       approvedAssetId: selectApprovedAsset.value,
       assetKind: selectAssetKind.value,
-      guideTheme,
-      language,
+      guideTheme: guideState.theme,
+      language: guideState.language,
       packId: selectPack.value,
-      section,
+      section: guideState.section,
       socialTheme: selectTheme.value,
     });
   };
@@ -220,7 +217,7 @@ export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: Soci
     previewPanel.setAttribute("aria-busy", "true");
   });
 
-  if (previewPanel.dataset.socialState === "idle") {
+  if (normalizeGuideSocialPreviewState(previewPanel.dataset.socialState) === "idle") {
     form.dataset.socialHistoryMode = "replace";
     form.requestSubmit();
   }

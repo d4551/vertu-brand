@@ -1,22 +1,27 @@
-import { extname, resolve } from "node:path";
+import { extname } from "node:path";
 
 import { Resvg } from "@resvg/resvg-js";
 import satori from "satori";
 
 type SatoriFontOptions = NonNullable<Parameters<typeof satori>[1]["fonts"]>[number];
 
+import { GUIDE_BRAND_COLOR_TOKENS, GUIDE_BRAND_FONT_FAMILIES, GUIDE_SOCIAL_THEME_TOKENS } from "../shared/brand-tokens";
+import { GUIDE_BRAND_ASSETS } from "../shared/config";
 import {
   buildSocialAssetFileName,
   buildSocialCarouselFileName,
   resolveSocialPackManifest,
   resolveSocialPresetCopy,
   resolveSocialSectionLabel,
+  SOCIAL_APPROVED_ASSETS,
   SOCIAL_ASSET_DEFINITIONS,
   type SocialAssetDefinition,
   type SocialPackManifest,
   type SocialRenderRequest,
   type SocialTheme,
 } from "../shared/social-toolkit";
+import { resolveGuideLocale } from "../shared/view-state";
+import { GUIDE_FONT_FILE_PATHS, resolveGuidePublicAssetSourcePath } from "./runtime-config";
 
 type SocialChild = SocialNode | string;
 
@@ -61,80 +66,62 @@ interface ApprovedAssetPresentation {
  * Preview payload returned by the toolkit preview endpoint.
  */
 export interface SocialPreviewModel extends SocialPackManifest {
-  carouselHeading: string;
   primaryAssetFileName: string;
   primaryAssetHref: string;
 }
 
-const PROJECT_ROOT = process.cwd();
 const FONT_REGISTRY: readonly SocialFontDefinition[] = [
   {
-    data: Bun.file(resolve(PROJECT_ROOT, "node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff")).arrayBuffer(),
-    name: "DM Sans",
+    data: Bun.file(GUIDE_FONT_FILE_PATHS.dmSans400).arrayBuffer(),
+    name: GUIDE_BRAND_FONT_FAMILIES.body,
     style: "normal",
     weight: 400,
   },
   {
-    data: Bun.file(resolve(PROJECT_ROOT, "node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff")).arrayBuffer(),
-    name: "DM Sans",
+    data: Bun.file(GUIDE_FONT_FILE_PATHS.dmSans700).arrayBuffer(),
+    name: GUIDE_BRAND_FONT_FAMILIES.body,
     style: "normal",
     weight: 700,
   },
   {
-    data: Bun.file(
-      resolve(PROJECT_ROOT, "node_modules/@fontsource/playfair-display/files/playfair-display-latin-700-normal.woff")
-    ).arrayBuffer(),
-    name: "Playfair Display",
+    data: Bun.file(GUIDE_FONT_FILE_PATHS.playfairDisplay700).arrayBuffer(),
+    name: GUIDE_BRAND_FONT_FAMILIES.identity,
     style: "normal",
     weight: 700,
   },
   {
-    data: Bun.file(
-      resolve(PROJECT_ROOT, "node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff")
-    ).arrayBuffer(),
-    name: "Instrument Serif",
+    data: Bun.file(GUIDE_FONT_FILE_PATHS.instrumentSerif400).arrayBuffer(),
+    name: GUIDE_BRAND_FONT_FAMILIES.display,
     style: "normal",
     weight: 400,
   },
   {
-    data: Bun.file(
-      resolve(PROJECT_ROOT, "node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff")
-    ).arrayBuffer(),
-    name: "IBM Plex Mono",
+    data: Bun.file(GUIDE_FONT_FILE_PATHS.ibmPlexMono400).arrayBuffer(),
+    name: GUIDE_BRAND_FONT_FAMILIES.mono,
     style: "normal",
     weight: 400,
   },
 ] as const;
 
-const THEME_PALETTES: Record<SocialTheme, SocialThemePalette> = {
-  dark: {
-    accent: "#D4B978",
-    background: "#080808",
-    border: "rgba(212, 185, 120, 0.28)",
-    card: "rgba(255, 255, 255, 0.06)",
-    logoPath: "VERTU-Logo-White.png",
-    muted: "#B5AFA7",
-    text: "#F2EDE5",
-  },
-  gold: {
-    accent: "#080808",
-    background: "#D4B978",
-    border: "rgba(8, 8, 8, 0.18)",
-    card: "rgba(255, 255, 255, 0.18)",
-    logoPath: "VERTU-Logo-Black.png",
-    muted: "#3A342B",
-    text: "#080808",
-  },
-  light: {
-    accent: "#D4B978",
-    background: "#FAF7F2",
-    border: "rgba(17, 17, 17, 0.12)",
-    card: "rgba(17, 17, 17, 0.04)",
-    logoPath: "VERTU-Logo-Black.png",
-    muted: "#58534C",
-    text: "#111111",
-  },
-};
+const withHexPrefix = (value: string): string => `#${value}`;
+
+const resolveLogoPath = (logoVariant: "black" | "white"): string =>
+  logoVariant === "white" ? GUIDE_BRAND_ASSETS.logoWhite : GUIDE_BRAND_ASSETS.logoBlack;
+
+const THEME_PALETTES: Record<SocialTheme, SocialThemePalette> = Object.fromEntries(
+  Object.entries(GUIDE_SOCIAL_THEME_TOKENS).map(([theme, tokens]) => [
+    theme,
+    {
+      accent: withHexPrefix(tokens.accent),
+      background: withHexPrefix(tokens.background),
+      border: tokens.border,
+      card: tokens.card,
+      logoPath: resolveLogoPath(tokens.logoVariant),
+      muted: withHexPrefix(tokens.muted),
+      text: withHexPrefix(tokens.text),
+    },
+  ])
+) as Record<SocialTheme, SocialThemePalette>;
 
 const assetCache = new Map<string, Promise<string>>();
 const renderedAssetCache = new Map<string, Promise<Uint8Array>>();
@@ -149,8 +136,12 @@ const div = (style: Record<string, number | string>, children: readonly SocialCh
 const textBlock = (text: string, style: Record<string, number | string>, type = "div"): SocialNode =>
   element(type, { children: text, style: { display: "flex", ...style } });
 
-const imageNode = (src: string, width: number, height: number, style: Record<string, number | string> = {}): SocialNode =>
-  element("img", { height, src, style, width });
+const imageNode = (
+  src: string,
+  width: number,
+  height: number,
+  style: Record<string, number | string> = {}
+): SocialNode => element("img", { height, src, style, width });
 
 const resolveAssetMimeType = (filePath: string): string => {
   const extension = extname(filePath).toLowerCase();
@@ -172,7 +163,7 @@ const getAssetDataUrl = (relativePath: string): Promise<string> => {
     return cached;
   }
 
-  const absolutePath = resolve(PROJECT_ROOT, relativePath.startsWith("/") ? relativePath.slice(1) : relativePath);
+  const absolutePath = resolveGuidePublicAssetSourcePath(relativePath);
   const promise = Bun.file(absolutePath)
     .arrayBuffer()
     .then((buffer) => `data:${resolveAssetMimeType(absolutePath)};base64,${Buffer.from(buffer).toString("base64")}`);
@@ -221,46 +212,53 @@ const resolveCachedPng = (
 
   const pendingValue = createValue().then(
     (value) => value,
-    (error: unknown) => {
+    (error: Error) => {
       cache.delete(key);
       throw error;
     }
   );
 
-  cache.set(key, pendingValue);
-  if (cache.size > RENDER_CACHE_MAX_ENTRIES) {
+  if (cache.size >= RENDER_CACHE_MAX_ENTRIES) {
     const oldestKey = cache.keys().next().value;
     if (typeof oldestKey === "string") {
       cache.delete(oldestKey);
     }
   }
+  cache.set(key, pendingValue);
 
   return pendingValue;
 };
 
+const ASSET_ACCENT_COLORS = {
+  black: withHexPrefix(GUIDE_BRAND_COLOR_TOKENS.black),
+  dark: withHexPrefix(GUIDE_BRAND_COLOR_TOKENS.dark),
+  gold: withHexPrefix(GUIDE_BRAND_COLOR_TOKENS.gold),
+} as const;
+
 const resolveApprovedAssetPresentation = (request: SocialRenderRequest): ApprovedAssetPresentation => {
-  const language = request.language === "zh" ? "zh" : "en";
+  const language = resolveGuideLocale(request.language);
+  const asset = SOCIAL_APPROVED_ASSETS[request.approvedAssetId];
 
   if (request.approvedAssetId === "agent-q") {
     return {
-      accent: request.theme === "gold" ? "#080808" : "#D4B978",
-      label: language === "zh" ? "Agent Q 收藏家版" : "Agent Q Collector Edition",
-      meta: language === "zh" ? "限量发布素材" : "Launch-approved hero asset",
+      accent: request.theme === "gold" ? ASSET_ACCENT_COLORS.black : ASSET_ACCENT_COLORS.gold,
+      label: asset.label[language],
+      meta: asset.meta[language],
     };
   }
 
   if (request.approvedAssetId === "quantum-flip") {
     return {
-      accent: request.theme === "light" ? "#111111" : "#D4B978",
-      label: language === "zh" ? "Quantum Flip 镀金细节" : "Quantum Flip Gilded Detail",
-      meta: language === "zh" ? "私享活动视觉锚点" : "Event-approved luxury detail",
+      accent: request.theme === "light" ? ASSET_ACCENT_COLORS.dark : ASSET_ACCENT_COLORS.gold,
+      label: asset.label[language],
+      meta: asset.meta[language],
     };
   }
 
   return {
-    accent: request.theme === "gold" ? "#111111" : "#D4B978",
-    label: language === "zh" ? "Signature 黑红系列" : "Signature Black/Red Story",
-    meta: language === "zh" ? "品牌常青视觉锚点" : "Evergreen brand narrative anchor",
+    accent: request.theme === "gold" ? ASSET_ACCENT_COLORS.dark : ASSET_ACCENT_COLORS.gold,
+    label: asset.label[language],
+    meta: asset.meta[language],
   };
 };
 
@@ -295,13 +293,13 @@ const renderApprovedAssetPanel = (
         [
           textBlock(presentation.label, {
             color: palette.text,
-            fontFamily: "Playfair Display",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.identity,
             fontSize: Math.max(24, Math.round(definition.width * 0.026)),
             lineHeight: 1.1,
           }),
           textBlock(presentation.meta, {
             color: palette.muted,
-            fontFamily: "DM Sans",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.body,
             fontSize: Math.max(16, Math.round(definition.width * 0.014)),
             lineHeight: 1.35,
           }),
@@ -333,7 +331,7 @@ const renderApprovedAssetPanel = (
               ),
               textBlock(request.approvedAssetId, {
                 color: palette.muted,
-                fontFamily: "IBM Plex Mono",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
                 fontSize: Math.max(14, Math.round(definition.width * 0.012)),
                 letterSpacing: Math.round(definition.width * 0.0013),
                 textTransform: "uppercase",
@@ -355,15 +353,20 @@ const renderApprovedAssetPanel = (
   );
 };
 
-const renderPrimaryCardLayout = async (request: SocialRenderRequest, definition: SocialAssetDefinition): Promise<SocialNode> => {
+const renderPrimaryCardLayout = async (
+  request: SocialRenderRequest,
+  definition: SocialAssetDefinition
+): Promise<SocialNode> => {
   const palette = resolveThemePalette(request.theme);
-  const copy = resolveSocialPresetCopy(request.presetId, request.language);
-  const languageKey = request.language === "zh" ? "zh" : "en";
+  const copy = resolveSocialPresetCopy(request.presetId);
+  const languageKey = resolveGuideLocale(request.language);
   const sectionLabel = resolveSocialSectionLabel(request.section, request.language);
   const logoAssetSrc = await getAssetDataUrl(palette.logoPath);
   const isPortrait = definition.height > definition.width;
   const framePadding = Math.max(40, Math.round(definition.width * 0.06));
-  const mediaWidth = isPortrait ? definition.width - definition.safeZone.left - definition.safeZone.right : Math.round(definition.width * 0.36);
+  const mediaWidth = isPortrait
+    ? definition.width - definition.safeZone.left - definition.safeZone.right
+    : Math.round(definition.width * 0.36);
 
   return div(
     {
@@ -396,19 +399,19 @@ const renderPrimaryCardLayout = async (request: SocialRenderRequest, definition:
               imageNode(logoAssetSrc, Math.round(definition.width * 0.16), Math.round(definition.width * 0.052)),
               textBlock(copy.eyebrow[languageKey], {
                 color: palette.accent,
-                fontFamily: "IBM Plex Mono",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
                 fontSize: Math.max(16, Math.round(definition.width * 0.014)),
                 letterSpacing: Math.round(definition.width * 0.002),
                 textTransform: "uppercase",
               }),
               textBlock(copy.title[languageKey], {
-                fontFamily: "Instrument Serif",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.display,
                 fontSize: Math.max(44, Math.round(definition.width * (isPortrait ? 0.068 : 0.052))),
                 lineHeight: 1.02,
               }),
               textBlock(copy.subtitle[languageKey], {
                 color: palette.muted,
-                fontFamily: "DM Sans",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.body,
                 fontSize: Math.max(20, Math.round(definition.width * 0.02)),
                 lineHeight: 1.4,
               }),
@@ -423,7 +426,7 @@ const renderPrimaryCardLayout = async (request: SocialRenderRequest, definition:
             [
               textBlock(sectionLabel, {
                 borderTop: `1px solid ${palette.border}`,
-                fontFamily: "IBM Plex Mono",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
                 fontSize: Math.max(14, Math.round(definition.width * 0.012)),
                 letterSpacing: Math.round(definition.width * 0.0013),
                 paddingTop: 16,
@@ -431,7 +434,7 @@ const renderPrimaryCardLayout = async (request: SocialRenderRequest, definition:
               }),
               textBlock(copy.description[languageKey], {
                 color: palette.muted,
-                fontFamily: "DM Sans",
+                fontFamily: GUIDE_BRAND_FONT_FAMILIES.body,
                 fontSize: Math.max(16, Math.round(definition.width * 0.014)),
                 lineHeight: 1.45,
               }),
@@ -448,18 +451,19 @@ const renderPrimaryCardLayout = async (request: SocialRenderRequest, definition:
           padding: framePadding,
           position: "relative",
         },
-        [
-          renderApprovedAssetPanel(request, definition, palette),
-        ]
+        [renderApprovedAssetPanel(request, definition, palette)]
       ),
     ]
   );
 };
 
-const renderQuoteCardLayout = async (request: SocialRenderRequest, definition: SocialAssetDefinition): Promise<SocialNode> => {
+const renderQuoteCardLayout = async (
+  request: SocialRenderRequest,
+  definition: SocialAssetDefinition
+): Promise<SocialNode> => {
   const palette = resolveThemePalette(request.theme);
-  const copy = resolveSocialPresetCopy(request.presetId, request.language);
-  const languageKey = request.language === "zh" ? "zh" : "en";
+  const copy = resolveSocialPresetCopy(request.presetId);
+  const languageKey = resolveGuideLocale(request.language);
   const logoAssetSrc = await getAssetDataUrl(palette.logoPath);
 
   return div(
@@ -483,7 +487,7 @@ const renderQuoteCardLayout = async (request: SocialRenderRequest, definition: S
         [
           textBlock(copy.eyebrow[languageKey], {
             color: palette.accent,
-            fontFamily: "IBM Plex Mono",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
             fontSize: Math.max(18, Math.round(definition.width * 0.016)),
             letterSpacing: Math.round(definition.width * 0.002),
             textTransform: "uppercase",
@@ -492,7 +496,7 @@ const renderQuoteCardLayout = async (request: SocialRenderRequest, definition: S
         ]
       ),
       textBlock(`“${copy.quote[languageKey]}”`, {
-        fontFamily: "Instrument Serif",
+        fontFamily: GUIDE_BRAND_FONT_FAMILIES.display,
         fontSize: Math.max(44, Math.round(definition.width * 0.055)),
         lineHeight: 1.08,
       }),
@@ -506,13 +510,13 @@ const renderQuoteCardLayout = async (request: SocialRenderRequest, definition: S
         },
         [
           textBlock(copy.quoteAttribution[languageKey], {
-            fontFamily: "DM Sans",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.body,
             fontSize: Math.max(20, Math.round(definition.width * 0.02)),
             fontWeight: 700,
           }),
           textBlock(resolveSocialSectionLabel(request.section, request.language), {
             color: palette.muted,
-            fontFamily: "IBM Plex Mono",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
             fontSize: Math.max(16, Math.round(definition.width * 0.014)),
             letterSpacing: Math.round(definition.width * 0.0015),
             textTransform: "uppercase",
@@ -523,10 +527,13 @@ const renderQuoteCardLayout = async (request: SocialRenderRequest, definition: S
   );
 };
 
-const renderEventInviteLayout = async (request: SocialRenderRequest, definition: SocialAssetDefinition): Promise<SocialNode> => {
+const renderEventInviteLayout = async (
+  request: SocialRenderRequest,
+  definition: SocialAssetDefinition
+): Promise<SocialNode> => {
   const palette = resolveThemePalette(request.theme);
-  const copy = resolveSocialPresetCopy(request.presetId, request.language);
-  const languageKey = request.language === "zh" ? "zh" : "en";
+  const copy = resolveSocialPresetCopy(request.presetId);
+  const languageKey = resolveGuideLocale(request.language);
   const logoAssetSrc = await getAssetDataUrl(palette.logoPath);
 
   return div(
@@ -550,7 +557,7 @@ const renderEventInviteLayout = async (request: SocialRenderRequest, definition:
         [
           textBlock(copy.eyebrow[languageKey], {
             color: palette.accent,
-            fontFamily: "IBM Plex Mono",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
             fontSize: Math.max(18, Math.round(definition.width * 0.017)),
             letterSpacing: Math.round(definition.width * 0.002),
             textTransform: "uppercase",
@@ -559,13 +566,13 @@ const renderEventInviteLayout = async (request: SocialRenderRequest, definition:
         ]
       ),
       textBlock(copy.title[languageKey], {
-        fontFamily: "Instrument Serif",
+        fontFamily: GUIDE_BRAND_FONT_FAMILIES.display,
         fontSize: Math.max(56, Math.round(definition.width * 0.07)),
         lineHeight: 1.02,
       }),
       textBlock(copy.subtitle[languageKey], {
         color: palette.muted,
-        fontFamily: "DM Sans",
+        fontFamily: GUIDE_BRAND_FONT_FAMILIES.body,
         fontSize: Math.max(22, Math.round(definition.width * 0.022)),
         lineHeight: 1.4,
       }),
@@ -579,7 +586,7 @@ const renderEventInviteLayout = async (request: SocialRenderRequest, definition:
       ),
       textBlock(resolveSocialSectionLabel(request.section, request.language), {
         borderTop: `1px solid ${palette.border}`,
-        fontFamily: "IBM Plex Mono",
+        fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
         fontSize: Math.max(16, Math.round(definition.width * 0.015)),
         letterSpacing: Math.round(definition.width * 0.0015),
         paddingTop: 18,
@@ -592,10 +599,11 @@ const renderEventInviteLayout = async (request: SocialRenderRequest, definition:
 const renderCarouselFrameLayout = async (request: SocialRenderRequest, frame: number): Promise<SocialNode> => {
   const definition = SOCIAL_ASSET_DEFINITIONS["ig-post"];
   const palette = resolveThemePalette(request.theme);
-  const copy = resolveSocialPresetCopy(request.presetId, request.language);
-  const languageKey = request.language === "zh" ? "zh" : "en";
+  const copy = resolveSocialPresetCopy(request.presetId);
+  const languageKey = resolveGuideLocale(request.language);
   const logoAssetSrc = await getAssetDataUrl(palette.logoPath);
-  const frameTitle = frame === 1 ? copy.title[languageKey] : frame === 2 ? copy.subtitle[languageKey] : copy.quote[languageKey];
+  const frameTitle =
+    frame === 1 ? copy.title[languageKey] : frame === 2 ? copy.subtitle[languageKey] : copy.quote[languageKey];
 
   return div(
     {
@@ -618,7 +626,7 @@ const renderCarouselFrameLayout = async (request: SocialRenderRequest, frame: nu
         [
           textBlock(`${frame}/3`, {
             color: palette.accent,
-            fontFamily: "IBM Plex Mono",
+            fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
             fontSize: 18,
             letterSpacing: 2,
           }),
@@ -634,13 +642,13 @@ const renderCarouselFrameLayout = async (request: SocialRenderRequest, frame: nu
         [renderApprovedAssetPanel(request, definition, palette)]
       ),
       textBlock(frameTitle, {
-        fontFamily: frame === 3 ? "Instrument Serif" : "Playfair Display",
+        fontFamily: frame === 3 ? GUIDE_BRAND_FONT_FAMILIES.display : GUIDE_BRAND_FONT_FAMILIES.identity,
         fontSize: frame === 3 ? 48 : 42,
         lineHeight: 1.08,
       }),
       textBlock(resolveSocialSectionLabel(request.section, request.language), {
         color: palette.muted,
-        fontFamily: "IBM Plex Mono",
+        fontFamily: GUIDE_BRAND_FONT_FAMILIES.mono,
         fontSize: 16,
         letterSpacing: 1.5,
         textTransform: "uppercase",
@@ -686,7 +694,10 @@ export const renderSocialAssetPng = async (request: SocialRenderRequest): Promis
 /**
  * Renders one carousel frame to PNG bytes.
  */
-export const renderSocialCarouselFramePng = async (request: SocialRenderRequest, frame: number): Promise<Uint8Array> => {
+export const renderSocialCarouselFramePng = async (
+  request: SocialRenderRequest,
+  frame: number
+): Promise<Uint8Array> => {
   const definition = SOCIAL_ASSET_DEFINITIONS["ig-post"];
   const cacheKey = resolveRenderCacheKey(
     {
@@ -712,17 +723,14 @@ export const renderSocialCarouselFramePng = async (request: SocialRenderRequest,
 /**
  * Builds the preview metadata consumed by the guide UI.
  */
-export const resolveSocialPreviewModel = (
-  request: SocialRenderRequest,
-  origin = ""
-): SocialPreviewModel => {
+export const resolveSocialPreviewModel = (request: SocialRenderRequest, origin = ""): SocialPreviewModel => {
   const manifest = resolveSocialPackManifest(request, origin);
 
   return {
     ...manifest,
-    carouselHeading: request.language === "zh" ? "轮播帧" : "Carousel Frames",
     primaryAssetFileName: buildSocialAssetFileName(request),
-    primaryAssetHref: manifest.assets.find((item) => item.kind === request.assetKind)?.href ?? manifest.assets[0]?.href ?? "",
+    primaryAssetHref:
+      manifest.assets.find((item) => item.kind === request.assetKind)?.href ?? manifest.assets[0]?.href ?? "",
   };
 };
 

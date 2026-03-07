@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 
-import { lstat, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { app } from "../src/server/app";
@@ -8,24 +7,19 @@ import { GUIDE_NAVIGATION } from "../src/server/content/navigation";
 import { GUIDE_PATHS } from "../src/server/runtime-config";
 import { GUIDE_ROUTES, HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
 import { findInteractiveElementsMissingAriaLabels } from "../src/shared/markup";
+import {
+  collectRepositoryPolicyFiles,
+  findExportedDeclarationsMissingJsDoc,
+  REPOSITORY_POLICY_ROOTS,
+  REPOSITORY_POLICY_TOKENS,
+  REPOSITORY_SOCIAL_ROUTE_LITERAL_PATTERN,
+} from "../src/shared/repository-policy";
 import { GUIDE_DOM_IDS, GUIDE_HTMX, GUIDE_SELECTORS } from "../src/shared/shell-contract";
 import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS } from "../src/shared/view-state";
 import { renderSectionMarkup } from "../src/server/content/source";
 import { writeStructuredLog } from "../src/shared/logger";
 
 const auditRoot = GUIDE_PATHS.projectRoot;
-const consoleToken = ["con", "sole."].join("");
-const execCommandToken = ["exec", "Command("].join("");
-const htmxExtensionToken = ["htmx", ".defineExtension("].join("");
-const bunPluginToken = ["Bun", ".plugin("].join("");
-const socialRouteLiteralPattern = /["'`]\/social(?:\/|\?)/;
-const policyRoots = [
-  join(auditRoot, "src"),
-  join(auditRoot, "tests"),
-  join(auditRoot, "scripts", "audit-brand-guide.ts"),
-  join(auditRoot, "scripts", "build-app.ts"),
-  join(auditRoot, "scripts", "generate-templates.mjs"),
-];
 
 const issues: string[] = [];
 
@@ -115,6 +109,16 @@ if (fullHtml.includes("HTMX + Elysia")) {
 
 if (!fullHtml.includes("传播套件预览")) {
   issues.push("Localized canvas accessibility copy is missing from the SSR document.");
+}
+
+if (
+  !fullHtml.includes('value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"') ||
+  !fullHtml.includes('option value="quantum-flip" selected="selected"') ||
+  !fullHtml.includes('option value="gold" selected="selected"') ||
+  !fullHtml.includes('id="social-preview-panel"') ||
+  !fullHtml.includes('data-social-state="idle"')
+) {
+  issues.push("SSR downloads section is not preserving the authored social preview defaults.");
 }
 
 for (const language of GUIDE_LANGUAGES) {
@@ -299,11 +303,11 @@ if (GUIDE_NAVIGATION[0]?.title.en !== "VERTU Brand Guide" || GUIDE_NAVIGATION[15
   issues.push("Generated navigation titles are not being sourced from the authoring guide metadata.");
 }
 
-const policyFiles = await collectFiles(policyRoots);
+const policyFiles = await collectRepositoryPolicyFiles(REPOSITORY_POLICY_ROOTS);
 const policySources = await Promise.all(policyFiles.map(async (file) => [file, await Bun.file(file).text()] as const));
 
 policySources.forEach(([file, source]) => {
-  if (source.includes(consoleToken)) {
+  if (source.includes(REPOSITORY_POLICY_TOKENS.console)) {
     issues.push(`Console logging is still present in ${file.replace(`${auditRoot}/`, "")}.`);
   }
 
@@ -311,17 +315,22 @@ policySources.forEach(([file, source]) => {
     issues.push(`Try/catch usage is still present in ${file.replace(`${auditRoot}/`, "")}.`);
   }
 
-  if (source.includes(execCommandToken)) {
+  if (source.includes(REPOSITORY_POLICY_TOKENS.execCommand)) {
     issues.push(`document.execCommand fallback is still present in ${file.replace(`${auditRoot}/`, "")}.`);
   }
 
-  if (source.includes(htmxExtensionToken)) {
+  if (source.includes(REPOSITORY_POLICY_TOKENS.htmxExtension)) {
     issues.push(`Unexpected custom HTMX extension was introduced in ${file.replace(`${auditRoot}/`, "")}.`);
   }
 
-  if (source.includes(bunPluginToken)) {
+  if (source.includes(REPOSITORY_POLICY_TOKENS.bunPlugin)) {
     issues.push(`Unexpected Bun plugin API usage was introduced in ${file.replace(`${auditRoot}/`, "")}.`);
   }
+});
+
+const undocumentedExports = await findExportedDeclarationsMissingJsDoc(REPOSITORY_POLICY_ROOTS);
+undocumentedExports.forEach(({ exportName, filePath }) => {
+  issues.push(`Export ${exportName} is missing JSDoc in ${filePath.replace(`${auditRoot}/`, "")}.`);
 });
 
 const authoringDocumentSource = await Bun.file(join(auditRoot, "index.html")).text();
@@ -330,26 +339,167 @@ const authoringInlineScripts = [...authoringDocumentSource.matchAll(/<script\b[^
 );
 
 const socialPluginSource = await Bun.file(join(auditRoot, "src", "server", "social-plugin.ts")).text();
+const clientEnhancementSource = await Bun.file(join(auditRoot, "src", "client", "progressive-enhancements.ts")).text();
+const clientSocialToolkitSource = await Bun.file(join(auditRoot, "src", "client", "social-toolkit.ts")).text();
+const socialPreviewSource = await Bun.file(join(auditRoot, "src", "server", "social-preview-markup.ts")).text();
 const socialToolkitSource = await Bun.file(join(auditRoot, "src", "shared", "social-toolkit.ts")).text();
+const sharedConfigSource = await Bun.file(join(auditRoot, "src", "shared", "config.ts")).text();
+const htmxEventContractSource = await Bun.file(join(auditRoot, "src", "shared", "htmx-event-contract.ts")).text();
+const runtimeSettingsSource = await Bun.file(join(auditRoot, "src", "shared", "runtime-settings.ts")).text();
+const i18nSource = await Bun.file(join(auditRoot, "src", "shared", "i18n.ts")).text();
 const sectionMarkupSource = await Bun.file(join(auditRoot, "src", "shared", "section-markup.ts")).text();
+const viewStateSource = await Bun.file(join(auditRoot, "src", "shared", "view-state.ts")).text();
+const serverAppSource = await Bun.file(join(auditRoot, "src", "server", "app.ts")).text();
+const observabilitySource = await Bun.file(join(auditRoot, "src", "server", "observability-plugin.ts")).text();
+const devSource = await Bun.file(join(auditRoot, "scripts", "dev.ts")).text();
+const bootSource = await Bun.file(join(auditRoot, "src", "server", "boot.ts")).text();
+const indexSource = await Bun.file(join(auditRoot, "src", "server", "index.ts")).text();
+const runtimeConfigSource = await Bun.file(join(auditRoot, "src", "server", "runtime-config.ts")).text();
+const serveSource = await Bun.file(join(auditRoot, "src", "server", "serve.ts")).text();
+const buildSource = await Bun.file(join(auditRoot, "scripts", "build-app.ts")).text();
+const generatedContentSource = await Bun.file(join(auditRoot, "src", "server", "content", "generated.ts")).text();
+const navigationSource = await Bun.file(join(auditRoot, "src", "server", "content", "navigation.ts")).text();
+const sectionSource = await Bun.file(join(auditRoot, "src", "server", "content", "source.ts")).text();
+const socialRendererSource = await Bun.file(join(auditRoot, "src", "server", "social-renderer.ts")).text();
 if (
-  socialRouteLiteralPattern.test(socialPluginSource) ||
-  socialRouteLiteralPattern.test(socialToolkitSource) ||
+  !runtimeSettingsSource.includes("resolveGuideRuntimeSettings") ||
+  !runtimeSettingsSource.includes("GUIDE_RUNTIME_DEFAULTS") ||
+  !runtimeSettingsSource.includes("logGuideRuntimeSettingWarnings") ||
+  !sharedConfigSource.includes("GUIDE_RUNTIME_SETTINGS") ||
+  !sharedConfigSource.includes("GUIDE_REQUEST_ID_HEADER") ||
+  !serverAppSource.includes("guideObservabilityPlugin") ||
+  !serverAppSource.includes("GUIDE_SERVER.host") ||
+  !observabilitySource.includes("Guide request completed") ||
+  !observabilitySource.includes("GUIDE_REQUEST_ID_HEADER") ||
+  !observabilitySource.includes("resolveGuideRequestId") ||
+  !socialPluginSource.includes("resolveGuideRequestId") ||
+  !socialPluginSource.includes("buildSocialErrorResponse") ||
+  !socialPluginSource.includes("buildConditionalBinaryResponse") ||
+  !socialPluginSource.includes("buildConditionalManifestResponse") ||
+  socialPluginSource.includes("manifest: unknown") ||
+  !socialPluginSource.includes("buildSocialHtmlResponse") ||
+  !socialPluginSource.includes("buildSocialRedirectResponse") ||
+  !socialPreviewSource.includes("new HTMLRewriter()") ||
+  socialPreviewSource.includes("previewMarkup?.includes") ||
+  socialPreviewSource.includes("replaceSocialPreviewPanel") ||
+  socialPreviewSource.includes("updatePreviewPanelState") ||
+  !socialPreviewSource.includes("resolveGuideSocialPreviewState") ||
+  !devSource.includes("GUIDE_RUNTIME_SETTINGS.devBuildDebounceMs") ||
+  !devSource.includes("GUIDE_RUNTIME_SETTINGS.devWatcherWarmupMs")
+) {
+  issues.push("Runtime settings and request observability are drifting away from the shared typed contract.");
+}
+
+if (
+  !htmxEventContractSource.includes("HTMX_BROWSER_EVENTS") ||
+  !htmxEventContractSource.includes("resolveHtmxEventTarget") ||
+  !htmxEventContractSource.includes('interface HTMLElementEventMap') ||
+  !viewStateSource.includes("resolveGuideState") ||
+  !viewStateSource.includes("resolveGuideDocumentLanguageTag") ||
+  !viewStateSource.includes("resolveGuideLocale") ||
+  !clientEnhancementSource.includes("HTMX_BROWSER_EVENTS") ||
+  !clientEnhancementSource.includes("resolveHtmxEventTarget") ||
+  !clientEnhancementSource.includes("resolveGuideState") ||
+  !clientEnhancementSource.includes("resolveGuideDocumentLanguageTag") ||
+  clientEnhancementSource.includes("Reflect.get(") ||
+  !clientSocialToolkitSource.includes("HTMX_BROWSER_EVENTS") ||
+  !clientSocialToolkitSource.includes("resolveHtmxEventTarget") ||
+  !clientSocialToolkitSource.includes("resolveGuideState") ||
+  !clientSocialToolkitSource.includes("normalizeGuideSocialPreviewState") ||
+  !socialToolkitSource.includes("GUIDE_SOCIAL_PREVIEW_STATES") ||
+  !socialToolkitSource.includes("normalizeGuideSocialPreviewState") ||
+  !socialToolkitSource.includes("resolveGuideLocale") ||
+  !socialRendererSource.includes("resolveGuideLocale") ||
+  clientSocialToolkitSource.includes("Reflect.get(")
+) {
+  issues.push("HTMX browser event handling is drifting away from the shared typed event contract.");
+}
+
+if (
+  REPOSITORY_SOCIAL_ROUTE_LITERAL_PATTERN.test(socialPluginSource) ||
+  REPOSITORY_SOCIAL_ROUTE_LITERAL_PATTERN.test(socialToolkitSource) ||
   !socialPluginSource.includes("SOCIAL_ROUTE_TEMPLATES") ||
   !socialPluginSource.includes("SOCIAL_QUERY_PARAMS") ||
   !socialToolkitSource.includes("GUIDE_ROUTES.socialAsset") ||
   !socialToolkitSource.includes("GUIDE_ROUTES.socialPack") ||
   !socialToolkitSource.includes("GUIDE_ROUTES.socialPreview") ||
   !socialToolkitSource.includes("SOCIAL_QUERY_PARAMS") ||
-  !sectionMarkupSource.includes("SOCIAL_QUERY_PARAMS") ||
+  socialToolkitSource.includes('path: "/assets/images/') ||
+  !socialToolkitSource.includes("toGuideImageAssetHref(") ||
+  !socialToolkitSource.includes("pickerLabel:") ||
+  !sectionMarkupSource.includes("SOCIAL_APPROVED_ASSETS[assetId]") ||
+  sectionMarkupSource.includes("socialApprovedAssetAgentQ") ||
+  sectionMarkupSource.includes("socialApprovedAssetQuantumFlip") ||
+  sectionMarkupSource.includes("socialApprovedAssetSignature") ||
+  !sharedConfigSource.includes("localOrigin: toGuideOrigin(") ||
+  !sharedConfigSource.includes("href: toGuideDownloadHref(") ||
+  !sharedConfigSource.includes("toGuideImageAssetHref") ||
+  i18nSource.includes("socialApprovedAssetAgentQ") ||
+  i18nSource.includes("socialApprovedAssetQuantumFlip") ||
+  i18nSource.includes("socialApprovedAssetSignature") ||
+  !sectionMarkupSource.includes("SOCIAL_GUIDE_QUERY_PARAMS") ||
   socialToolkitSource.includes("http://localhost") ||
   !socialToolkitSource.includes("GUIDE_SERVER.localOrigin")
 ) {
-  issues.push("Social endpoint contracts are drifting away from centralized shared route constants.");
+  issues.push("Shared route and origin contracts are drifting away from centralized config helpers.");
+}
+
+if (
+  !serverAppSource.includes("return Bun.file(resolveDownloadPath(id));") ||
+  serverAppSource.includes("Bun.file(resolveDownloadPath(id)).arrayBuffer()")
+) {
+  issues.push("Download routes are no longer streaming native Bun.file responses from the shared download contract.");
+}
+
+if (
+  !runtimeConfigSource.includes("GUIDE_DEV_BUILD_SCRIPTS") ||
+  !runtimeConfigSource.includes("resolveGuidePaths") ||
+  !runtimeConfigSource.includes("resolveGuideBrandFilePaths") ||
+  !runtimeConfigSource.includes("resolveGuideFontFilePaths") ||
+  !runtimeConfigSource.includes("resolveGuidePublicAssetSourcePath") ||
+  !runtimeConfigSource.includes("resolveGuidePublicDirectories") ||
+  !runtimeConfigSource.includes("resolveGuidePublicFiles") ||
+  !runtimeConfigSource.includes("GUIDE_SOCIAL_BUILD_INPUT_FILES") ||
+  !runtimeConfigSource.includes("resolveGuideSocialBuildInputFiles") ||
+  !runtimeConfigSource.includes("resolveGuideFullBuildTriggerPaths") ||
+  !runtimeConfigSource.includes("resolveGuideDevBuildTarget") ||
+  !runtimeConfigSource.includes("resolveGuideBuildCommand") ||
+  !runtimeConfigSource.includes("resolveGuideServerCommand") ||
+  !runtimeConfigSource.includes("resolveGuideStylesheetBuildCommand") ||
+  !runtimeConfigSource.includes("GUIDE_SERVER_ENTRYPOINT_FILES") ||
+  !bootSource.includes("GUIDE_SERVER_BOOT_OPTIONS") ||
+  !bootSource.includes("bootGuideServer") ||
+  !devSource.includes("resolveGuideDevBuildTarget") ||
+  !devSource.includes("resolveGuideBuildCommand") ||
+  !devSource.includes("resolveGuideServerCommand") ||
+  !indexSource.includes('bootGuideServer("dev")') ||
+  !serveSource.includes('bootGuideServer("serve")') ||
+  !buildSource.includes("resolveGuidePaths") ||
+  !buildSource.includes("resolveGuidePublicAssetSourcePath") ||
+  !buildSource.includes("resolveGuidePublicDirectories") ||
+  !buildSource.includes("resolveGuidePublicFiles") ||
+  !buildSource.includes("GUIDE_SOCIAL_BUILD_INPUT_FILES") ||
+  !buildSource.includes("resolveGuideStylesheetBuildCommand") ||
+  buildSource.includes("GUIDE_FONT_FILE_PATHS") ||
+  buildSource.includes("path.slice(1)") ||
+  buildSource.includes("toStagingPath")
+) {
+  issues.push("Build orchestration is drifting away from the shared path and rebuild contracts.");
+}
+
+if (
+  !generatedContentSource.includes("navigation.generated.ts") ||
+  !generatedContentSource.includes("sections.generated.ts") ||
+  navigationSource.includes("navigation.generated.ts") ||
+  sectionSource.includes("sections.generated.ts") ||
+  !navigationSource.includes('from "./generated"') ||
+  !sectionSource.includes('from "./generated"')
+) {
+  issues.push("Generated content imports are drifting away from the shared server content module.");
 }
 
 authoringInlineScripts.forEach((scriptBody, index) => {
-  if (scriptBody.includes(consoleToken)) {
+  if (scriptBody.includes(REPOSITORY_POLICY_TOKENS.console)) {
     issues.push(`Console logging is still present in index.html inline script #${index + 1}.`);
   }
 
@@ -379,25 +529,3 @@ writeStructuredLog({
   },
 });
 process.exit(0);
-
-async function collectFiles(entries: string[]): Promise<string[]> {
-  const results: string[] = [];
-
-  for (const entry of entries) {
-    const stats = await lstat(entry);
-    if (!stats.isDirectory()) {
-      results.push(entry);
-      continue;
-    }
-
-    const directoryEntries = await readdir(entry, { withFileTypes: true });
-    const nestedFiles = await collectFiles(
-      directoryEntries
-        .filter((directoryEntry) => directoryEntry.name !== "vendor")
-        .map((directoryEntry) => join(entry, directoryEntry.name))
-    );
-    results.push(...nestedFiles);
-  }
-
-  return results.filter((file) => /\.(?:js|mjs|ts)$/.test(file));
-}

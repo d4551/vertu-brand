@@ -1,5 +1,11 @@
 import { GUIDE_BRAND_ASSETS, GUIDE_ROUTES, HTMX_CONFIG } from "../../shared/config";
 import { GUIDE_HTMX, GUIDE_SELECTORS, GUIDE_DOM_IDS } from "../../shared/shell-contract";
+import { GUIDE_PATHS } from "../runtime-config";
+
+const SCRIPT_FINGERPRINT = new Bun.CryptoHasher("md5")
+  .update(String(Bun.file(GUIDE_PATHS.clientScriptOutput).size))
+  .digest("hex")
+  .slice(0, 8);
 import {
   renderLocalizedSpans,
   renderVisibleCopy,
@@ -11,6 +17,8 @@ import {
 import {
   nextGuideLanguage,
   nextGuideTheme,
+  resolveGuideDocumentLanguageTag,
+  resolveGuideLocale,
   type GuideViewState,
 } from "../../shared/view-state";
 import {
@@ -29,7 +37,7 @@ import { renderSectionMarkup } from "../content/source";
  * Renders the full SSR document for direct navigation.
  */
 export const renderDocument = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
-  const sectionTitle = GUIDE_NAVIGATION.find((item) => item.id === viewState.section)?.title[viewState.language === "zh" ? "zh" : "en"];
+  const sectionTitle = GUIDE_NAVIGATION.find((item) => item.id === viewState.section)?.title[resolveGuideLocale(viewState.language)];
   const description =
     viewState.section === "s0"
       ? resolveCopy("guideDescription", viewState.language)
@@ -56,7 +64,7 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
 
   return [
     "<!DOCTYPE html>",
-    `<html lang="${resolveDocumentLanguageTag(viewState.language)}" data-theme="${viewState.theme}" data-lang="${viewState.language}">`,
+    `<html lang="${resolveGuideDocumentLanguageTag(viewState.language)}"${viewState.theme === "system" ? "" : ` data-theme="${viewState.theme}"`} data-lang="${viewState.language}">`,
     "<head>",
     '  <meta charset="UTF-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
@@ -74,7 +82,7 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
     `  <link rel="canonical" href="${escapeAttribute(canonicalHref)}">`,
     `  <title>${escapeHtml(title)}</title>`,
     `  <link href="${GUIDE_ROUTES.stylesheet}" rel="stylesheet">`,
-    `  <script src="${GUIDE_ROUTES.clientScript}" type="module" defer></script>`,
+    `  <script src="${GUIDE_ROUTES.clientScript}?v=${SCRIPT_FINGERPRINT}" type="module" defer></script>`,
     "</head>",
     '<body class="bg-base-100 text-base-content antialiased min-h-screen relative w-full overflow-x-hidden">',
     renderGuidePage(viewState, requestOrigin, requestQuery),
@@ -331,7 +339,7 @@ const renderLanguageLabel = (lang: GuideViewState["language"], controlLocale: "e
 
 const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearchParams): string => {
   const socialQuery = resolveGuideSocialQueryValues(requestQuery);
-  const controlLocale = viewState.language === "zh" ? "zh" : "en";
+  const controlLocale = resolveGuideLocale(viewState.language);
   const nextTheme = nextGuideTheme(viewState.theme);
   const nextLang = nextGuideLanguage(viewState.language);
 
@@ -471,9 +479,6 @@ const renderGuideCoverTitle = (): string =>
 
 const inlineCopy = (copy: LocalizedCopy, language: GuideViewState["language"]): string =>
   language === "zh" ? copy.zh : language === "bi" ? `${copy.en} · ${copy.zh}` : copy.en;
-
-const resolveDocumentLanguageTag = (language: GuideViewState["language"]): string =>
-  language === "zh" ? "zh" : language === "bi" ? "mul" : "en";
 
 const resolveCanonicalGuideHref = (
   viewState: GuideViewState,

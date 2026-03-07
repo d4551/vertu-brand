@@ -6,13 +6,14 @@
 [![HTMX](https://img.shields.io/badge/HTMX-2.0-1B6AC6)](https://htmx.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.2-38B2AC?logo=tailwind-css&logoColor=fff)](https://tailwindcss.com)
 [![Tests](https://img.shields.io/badge/Tests-bun_test-000000?logo=bun)](https://bun.sh)
+[![Lint](https://img.shields.io/badge/Lint-Biome_2.2-60A5FA)](https://biomejs.dev)
 [![Format: Prettier](https://img.shields.io/badge/Format-Prettier-F7B93E?logo=prettier&logoColor=000)](https://prettier.io)
 
-SSR-first VERTU brand guide built on Bun, Elysia, HTMX, Tailwind CSS 4, and daisyUI 5. The app renders a branded full-screen cover plus a server-owned guide shell, with browser JavaScript limited to progressive enhancement such as HTMX runtime boot, syntax highlighting, focus management, clipboard actions, and canvas exports through a single compiled client asset. Section markup is precompiled per language during the build so the server reads typed fragments instead of re-localizing authoring HTML on every request. Generated document templates and the downloadable HTML guide snapshot now share typed release metadata with the UI so the build pipeline and runtime stay aligned.
+SSR-first VERTU brand guide built on Bun, Elysia, HTMX, Tailwind CSS 4, and daisyUI 5. The app renders a branded full-screen cover plus a server-owned guide shell, with browser JavaScript limited to progressive enhancement such as HTMX runtime boot, syntax highlighting, focus management, clipboard actions, and canvas exports through a single compiled client asset. Section markup is precompiled per language during the build so the server reads typed fragments instead of re-localizing authoring HTML on every request. Generated document templates, social-renderer palettes, and the downloadable HTML guide snapshot share typed release metadata and brand tokens with the UI so the build pipeline and runtime stay aligned, and unchanged canonical social outputs are fingerprint-reused across verification runs instead of being rerendered on every cycle.
 
 **Languages:** [English](README.md) · [中文](README.zh-CN.md)
 
-## Current stack
+## Stack
 
 | Layer              | Technology                                                                    |
 | ------------------ | ----------------------------------------------------------------------------- |
@@ -71,6 +72,7 @@ flowchart LR
     CSS[styles/brand-guide.css]
     ClientTS[src/client/*.ts]
     I18n[i18n.ts]
+    Tokens[brand-tokens.ts]
   end
 
   subgraph Build["scripts/build-app.ts"]
@@ -79,6 +81,7 @@ flowchart LR
     Bundle[Bun bundle guide.js]
     Sections[Precompile sections]
     Nav[Precompile navigation]
+    Social[Social asset render]
   end
 
   subgraph Templates["scripts/generate-templates.mjs"]
@@ -95,10 +98,13 @@ flowchart LR
   CSS --> Tailwind
   ClientTS --> Bundle
   I18n --> Sections
+  Tokens --> Social
+  Tokens --> Templates
   Rewriter --> Sections
   Rewriter --> Nav
   Tailwind --> GenPublic
   Bundle --> GenPublic
+  Social --> GenPublic
   Sections --> GenContent
   Nav --> GenContent
   Templates --> GenPublic
@@ -163,6 +169,7 @@ graph TD
 - `#guide-page` is marked with `hx-history-elt` so HTMX snapshots the branded page wrapper instead of the entire body.
 - During HTMX navigation, the page, shell, and main region expose `aria-busy`, then the browser layer restores focus to the main region and keeps section swaps aligned to the top of the guide stage instead of the cover.
 - Invalid sections return HTTP `404` and fall back to `s0` with an in-page alert.
+- Guide-owned SSR, download, and social toolkit responses include a correlation id header, and request completion/error events are emitted through the shared structured logger.
 
 ## Server entrypoints
 
@@ -171,7 +178,7 @@ graph TD
 | `src/server/index.ts` | `3000`       | Development server started by `bun run dev`                |
 | `src/server/serve.ts` | `3090`       | Typed static-preview entrypoint for built-asset validation |
 
-Both entrypoints respect the `GUIDE_PORT` environment variable. `index.ts` also reads `PORT` and supports `-l`/`--listen` CLI flags.
+Both entrypoints use one shared port-resolution contract from `runtime-config.ts`, one shared boot contract from `src/server/boot.ts`, and shared defaults from `src/shared/runtime-settings.ts`. They respect `GUIDE_PORT`; `index.ts` also reads `PORT` and supports `-l`/`--listen` CLI flags.
 
 ## Repository layout
 
@@ -185,44 +192,53 @@ src/
       guide.css             # Tailwind 4 + daisyUI entry for the compiled asset bundle
   server/
     app.ts                 # Elysia routes + official static plugin wiring
+    boot.ts                # Shared boot contract for dev and serve entrypoints
     index.ts               # Development server entrypoint (used by scripts/dev.ts)
+    observability-plugin.ts # Shared request-id propagation and structured request logging
     serve.ts               # Typed dedicated serve entrypoint for the local static-preview port
     social-plugin.ts       # Elysia plugin for social render + preview + pack routes
-    social-renderer.ts     # Satori + Resvg renderer and preview-model helpers
-    runtime-config.ts      # Server-only filesystem paths for the generated runtime
+    social-renderer.ts     # Satori + Resvg renderer and preview-model helpers using shared brand tokens
+    runtime-config.ts      # Server-only filesystem paths + shared port resolver using Bun-native module-relative paths
     content/
+      generated.ts         # Re-exports generated section and navigation registries
       navigation.ts        # Canonical section navigation metadata
       source.ts            # Renders localized sections from the generated registry
     render/
       layout.ts            # SSR document, branded cover, and HTMX shell rendering
   shared/
+    asset-operator-contract.ts # Shared DOM ids for download/logo/social toolkit markup and tests
+    authoring-guide.ts     # Bun HTMLRewriter-based authoring extraction and asset URL normalization
+    brand-tokens.ts        # Shared brand palette, font families, and social theme tokens
     config.ts              # Public routes, download ids, and server runtime defaults
     guide-interactions.ts  # Typography playground and scroll-progress computation
+    htmx-event-contract.ts # Typed HTMX browser event names, detail payloads, and target resolution
     i18n.ts                # Shared bilingual copy
-    template-catalog.ts    # Shared release metadata and generated template registry
-    template-markup.ts     # Server-owned template library cards for the downloads section
-    authoring-guide.ts     # Bun HTMLRewriter-based authoring extraction and asset URL normalization
     logger.ts              # Structured logging
     markup.ts              # HTML label audits + markup text helpers
+    repository-policy.ts   # Filesystem and AST policy checks for audits
+    runtime-settings.ts    # Typed shared runtime defaults, env parsing, and warning logging
     section-markup.ts      # Build-time section localization and ARIA normalization
     shell-contract.ts      # Shared SSR/client/test DOM ids, selectors, and HTMX shell wiring
     social-toolkit.ts      # Social preset registry, contracts, request normalization, and manifest builders
+    template-catalog.ts    # Shared release metadata and generated template registry
+    template-markup.ts     # Server-owned template library cards for the downloads section
     view-state.ts          # URL state normalization
 
 tests/
-  app.test.ts
   accessibility.test.ts
+  app.test.ts
   http-e2e.test.ts
   policy.test.ts
+  social-toolkit.test.ts
 
 scripts/
   audit-brand-guide.ts     # SSR/accessibility/policy audit
   build-app.ts             # Builds assets, precompiled sections/navigation, and the bounded public surface
   dev.ts                   # Local boot orchestrator: initial build, filesystem watching, rebuild, and server restart
-  generate-templates.mjs   # Generates canonical PPTX + DOCX source files
+  generate-templates.mjs   # Generates canonical PPTX + DOCX source files from shared catalog + brand tokens
 
-index.html                 # Migration source for section markup and guide prose
-styles/brand-guide.css     # Existing visual system + SSR shell overrides
+index.html                 # Authoring source for section markup and guide prose
+styles/brand-guide.css     # Visual system + SSR shell overrides
 .generated/                # Build output: public assets + generated section registry
 ```
 
@@ -232,6 +248,7 @@ styles/brand-guide.css     # Existing visual system + SSR shell overrides
 bun run dev            # Full local boot: build → watch → serve on port 3000
 bun run build          # Run build:templates then build:app
 bun run build:app      # HTMLRewriter extraction, Tailwind/Bun bundling, public surface assembly
+bun run lint           # Run Biome across TypeScript, CSS, JSON, and authored HTML surfaces
 bun run serve          # Static-preview server on port 3090
 bun run build:templates # Generate canonical PPTX + DOCX brand templates
 bun run typecheck      # Run the TypeScript compiler in check-only mode
@@ -245,8 +262,20 @@ bun run format:check   # Verify formatting without writing changes
 
 | Variable                    | Default | Description                                                                    |
 | --------------------------- | ------- | ------------------------------------------------------------------------------ |
+| `GUIDE_HOST`                | `localhost` | Shared listen hostname and canonical local origin host                      |
+| `GUIDE_DEFAULT_PORT`        | `3000`  | Default development server port before `GUIDE_PORT` / CLI overrides            |
+| `GUIDE_SERVE_PORT`          | `3090`  | Default static-preview port before `GUIDE_PORT` overrides                      |
 | `GUIDE_PORT`                | —       | Overrides the default port for either server                                   |
 | `PORT`                      | —       | Fallback port read by `index.ts` only                                          |
+| `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | Response/request correlation header name                                 |
+| `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | Max-age for compiled CSS/JS and copied public assets                   |
+| `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | SWR window for compiled CSS/JS and copied public assets |
+| `GUIDE_MANIFEST_MAX_AGE_SECONDS` | `3600` | Max-age for generated social manifests                                   |
+| `GUIDE_MANIFEST_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | SWR window for generated social manifests           |
+| `GUIDE_SOCIAL_ASSET_MAX_AGE_SECONDS` | `86400` | Max-age for rendered social PNG assets                                  |
+| `GUIDE_SOCIAL_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `604800` | SWR window for rendered social PNG assets      |
+| `GUIDE_DEV_BUILD_DEBOUNCE_MS` | `150` | Filesystem event debounce window for `bun run dev`                            |
+| `GUIDE_DEV_WATCHER_WARMUP_MS` | `1000` | Watcher warmup window after boot/rebuild                                     |
 | `VERTU_TEMPLATE_SAFE_FONTS` | —       | Set to `1` to use system-safe fonts in PPTX/DOCX generation (avoids embedding) |
 
 Copy [`.env.example`](.env.example) to `.env` or `.env.local` and adjust as needed. Never commit `.env` or `.env.local` — they are gitignored.
@@ -267,15 +296,42 @@ Best practices:
 
 ## Notes
 
-- `index.html` is the authoring source for long-form section prose, and `bun run build:app` uses Bun HTMLRewriter to extract sections deterministically and precompile localized sections and navigation into `.generated/content/` so the live server does direct lookups instead of mutating markup at request time.
-- Authoring-time `data-i18n-text`, `data-i18n-alt`, and `data-i18n-aria` tokens in `index.html` are resolved during `bun run build:app`, so new localized section strings should be added to [`src/shared/i18n.ts`](src/shared/i18n.ts) instead of request-time string replacement.
-- `index.html` no longer owns language/theme bootstrap state; the live SSR route owns the branded cover plus shell contract.
+- `index.html` is the authoring source for long-form section prose. `bun run build:app` uses Bun HTMLRewriter to extract sections deterministically and precompile localized sections and navigation into `.generated/content/` so the live server does direct lookups instead of mutating markup at request time.
+- Authoring-time `data-i18n-text`, `data-i18n-alt`, and `data-i18n-aria` tokens in `index.html` are resolved during `bun run build:app`. New localized section strings should be added to [`src/shared/i18n.ts`](src/shared/i18n.ts).
+- The live SSR route owns language/theme bootstrap state and the branded cover plus shell contract.
 - The downloadable HTML guide is generated from the live SSR route during `bun run build`, so saved guide snapshots stay aligned with the current cover, sidebar, and request-state shell.
 - Built CSS/JS assets and the bounded public surface are generated into `.generated/public/` by `bun run build:app`.
-- `bun run dev` now owns the full local boot sequence: initial build, filesystem watching, rebuild orchestration, server watch mode, and cleanup on exit.
-- The live server no longer exposes the repository root. Only files copied into `.generated/public/` are web-accessible.
-- HTMX and Prism now ship inside the compiled client and stylesheet bundles instead of separate vendored browser assets.
+- Canonical social PNGs and pack manifests are fingerprinted during `bun run build:app`; when renderer inputs are unchanged, the build reuses the previous `.generated/public/assets/social/` output instead of rerendering the full matrix.
+- Shared path resolution in `src/server/runtime-config.ts` drives both canonical and staging build output, so `scripts/build-app.ts` delegates `.generated` path computation to the shared contract.
+- Brand-owned files, local font files, full-build triggers, and social fingerprint inputs are resolved from the same runtime-config contract, keeping project-root-dependent paths out of ad hoc script logic.
+- Runtime defaults, cache headers, dev watcher timing, and request-id propagation are defined in `src/shared/runtime-settings.ts` so server entrypoints and scripts share one source of truth.
+- Bun command arrays for server launch, `bun run` build targets, and Tailwind compilation are defined in `src/server/runtime-config.ts`, while `src/server/boot.ts` owns the dev-vs-serve boot split.
+- Social toolkit PNG, manifest, preview, redirect, and invalid-envelope responses are built through one typed header/ETag contract inside `src/server/social-plugin.ts`.
+- `social-renderer.ts` resolves all font family names and accent colors from `GUIDE_BRAND_FONT_FAMILIES` and `GUIDE_BRAND_COLOR_TOKENS` in `brand-tokens.ts`; asset-specific accent mapping lives in a local `ASSET_ACCENT_COLORS` constant that references the shared tokens.
+- `logo-generator.ts` derives its default background from `GUIDE_BRAND_COLOR_TOKENS.black`.
+- `generate-templates.mjs` resolves all slide layout dimensions from named `PPTX.layout` and `PPTX.style` constants and routes its evidence-theme color through the shared `BRAND.colors` map so no raw hex values appear outside the token source of truth.
+- PPTX slide content (menu cards, bento media placeholders, insight evidence blocks) is constrained within the 7.5″ slide height and the 6.85″ footer rule, preventing out-of-bounds overflow in generated presentations.
+
+## AI Docs
+
+- External stack references verified against [llms-stack-refresh](https://github.com/d4551/llms-stack-refresh).
+- Recommended raw docs:
+  - [Bun](https://raw.githubusercontent.com/d4551/llms-stack-refresh/main/bun/llms.txt)
+  - [ElysiaJS](https://raw.githubusercontent.com/d4551/llms-stack-refresh/main/elysiajs/llms.txt)
+  - [htmx](https://raw.githubusercontent.com/d4551/llms-stack-refresh/main/htmx/llms.txt)
+  - [Tailwind CSS](https://raw.githubusercontent.com/d4551/llms-stack-refresh/main/tailwindcss/llms.txt)
+  - [daisyUI](https://raw.githubusercontent.com/d4551/llms-stack-refresh/main/daisyui/llms.txt)
+- Generated navigation and section imports flow through `src/server/content/generated.ts`, and public asset hrefs are resolved back to source files through a shared runtime-config helper.
+- Approved social image paths use a shared `/assets/images` href helper from `src/shared/config.ts`.
+- Approved social asset alt text, picker labels, display labels, and metadata live in the shared social registry so the form layer and renderer consume typed copy.
+- The embedded downloads-section social form keeps authored defaults and preview-panel state through Bun `HTMLRewriter` transforms.
+- Guide language/theme/section normalization and social preview-panel states resolve through shared typed helpers, so SSR, browser hydration, and social rendering share one set of fallback rules.
+- `bun run dev` owns the full local boot sequence: initial full build, filesystem watching, app-only rebuilds for regular guide edits, full rebuilds when template/build-config inputs change, server watch mode, and cleanup on exit.
+- The live server exposes only files copied into `.generated/public/`; the repository root is not web-accessible.
+- HTMX and Prism ship inside the compiled client and stylesheet bundles.
+- HTMX browser event names and `detail.target` resolution live in [`src/shared/htmx-event-contract.ts`](src/shared/htmx-event-contract.ts), so client enhancements use typed constants for swap/error lifecycle handling.
 - New user-facing strings should be added to [`src/shared/i18n.ts`](src/shared/i18n.ts).
 - Maintained source is expected to avoid `console.*` usage and `try/catch` blocks.
 - The audit covers SSR output, HTMX fragment behavior, history restoration, centralized shell selectors, compiled asset delivery, public-surface isolation, explicit ARIA labels on interactive controls, parity markers for interactive sections, Tailwind source scanning, and the code-quality policy above.
-- `bun run test` includes a live HTTP smoke suite that exercises the app over an ephemeral port instead of relying only on direct `app.handle()` calls.
+- `bun run audit`, `bun run test`, and `bun run typecheck` lint before building so verification cannot bypass static analysis.
+- `bun run test` includes a live HTTP smoke suite that exercises the app over an ephemeral port.

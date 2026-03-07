@@ -1,29 +1,35 @@
 #!/usr/bin/env bun
 
-import { existsSync, lstatSync, readdirSync, watch, type FSWatcher } from "node:fs";
+import { watch, type FSWatcher } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 
-import { GUIDE_BUILD_WATCH_PATHS, GUIDE_PATHS } from "../src/server/runtime-config";
+import {
+  GUIDE_BUILD_WATCH_PATHS,
+  GUIDE_PATHS,
+  type GuideDevBuildTarget,
+  resolveGuideBuildCommand,
+  resolveGuideDevBuildTarget,
+  resolveGuideServerCommand,
+} from "../src/server/runtime-config";
 import { writeStructuredLog } from "../src/shared/logger";
+import { GUIDE_RUNTIME_SETTINGS, logGuideRuntimeSettingWarnings } from "../src/shared/runtime-settings";
 
-const BUILD_DEBOUNCE_MS = 150;
-const WATCHER_WARMUP_MS = 1000;
-const buildCommand = [process.execPath, "run", "build"] as const;
-const serverCommand = [process.execPath, "./src/server/index.ts"] as const;
+const BUILD_DEBOUNCE_MS = GUIDE_RUNTIME_SETTINGS.devBuildDebounceMs;
+const WATCHER_WARMUP_MS = GUIDE_RUNTIME_SETTINGS.devWatcherWarmupMs;
+const initialBuildCommand = resolveGuideBuildCommand("full", GUIDE_PATHS.projectRoot);
 
 let buildInFlight = false;
-let buildQueued = false;
+let buildQueuedTarget: GuideDevBuildTarget | null = null;
 let buildTimer: ReturnType<typeof setTimeout> | null = null;
 let ignoreWatchEventsUntil = Date.now() + WATCHER_WARMUP_MS;
 let serverProcess: ReturnType<typeof Bun.spawn> | null = null;
 let shuttingDown = false;
 let watchersReady = false;
-const watchedPathSignatures = new Map<string, string>();
 const watchers: FSWatcher[] = [];
 
 const initialBuild = Bun.spawnSync({
-  cmd: [...buildCommand],
-  cwd: GUIDE_PATHS.projectRoot,
+  cmd: initialBuildCommand.cmd,
+  cwd: initialBuildCommand.cwd,
   stderr: "inherit",
   stdout: "inherit",
 });
@@ -35,70 +41,27 @@ if (initialBuild.exitCode !== 0) {
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
+logGuideRuntimeSettingWarnings("dev");
+
 writeStructuredLog({
   component: "dev",
   level: "INFO",
   message: "Guide development orchestrator running",
   context: {
+    buildDebounceMs: BUILD_DEBOUNCE_MS,
     watchedDirectories: GUIDE_BUILD_WATCH_PATHS.directories.length,
     watchedFiles: GUIDE_BUILD_WATCH_PATHS.files.length,
+    watcherWarmupMs: WATCHER_WARMUP_MS,
   },
 });
 
-const readPathSignature = (path: string): string => {
-  if (!existsSync(path)) {
-    return "missing";
-  }
+const mergeQueuedBuildTarget = (
+  current: GuideDevBuildTarget | null,
+  next: GuideDevBuildTarget
+): GuideDevBuildTarget => (current === "full" || next === "full" ? "full" : next);
 
-  const stats = lstatSync(path);
-
-  if (!stats.isDirectory()) {
-    return `${stats.isFile() ? "file" : "other"}:${stats.size}:${stats.mtimeMs}`;
-  }
-
-  const entries = readdirSync(path, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name));
-  return [
-    `dir:${entries.length}`,
-    ...entries.map((entry) => `${entry.name}:${readPathSignature(resolve(path, entry.name))}`),
-  ].join("|");
-};
-
-const seedWatchState = (path: string): void => {
-  watchedPathSignatures.set(path, readPathSignature(path));
-
-  if (!existsSync(path) || !lstatSync(path).isDirectory()) {
-    return;
-  }
-
-  readdirSync(path, { withFileTypes: true }).forEach((entry) => {
-    seedWatchState(resolve(path, entry.name));
-  });
-};
-
-function refreshWatchState(): void {
-  watchedPathSignatures.clear();
-  GUIDE_BUILD_WATCH_PATHS.directories.forEach(seedWatchState);
-  GUIDE_BUILD_WATCH_PATHS.files.forEach(seedWatchState);
-}
-
-const hasSourceChanged = (path: string): boolean => {
-  const previousSignature = watchedPathSignatures.get(path);
-  const nextSignature = readPathSignature(path);
-
-  if (previousSignature === nextSignature) {
-    return false;
-  }
-
-  watchedPathSignatures.set(path, nextSignature);
-  return true;
-};
-
-const scheduleBuild = (path: string, reason: string): void => {
+const scheduleBuild = (reason: string, changedPath: string): void => {
   if (!watchersReady || Date.now() < ignoreWatchEventsUntil) {
-    return;
-  }
-
-  if (!hasSourceChanged(path)) {
     return;
   }
 
@@ -108,7 +71,7 @@ const scheduleBuild = (path: string, reason: string): void => {
   }
 
   buildTimer = setTimeout(() => {
-    void runBuild(reason);
+    void runBuild(reason, resolveGuideDevBuildTarget(changedPath));
   }, BUILD_DEBOUNCE_MS);
 };
 
@@ -118,12 +81,12 @@ function createWatchers(): FSWatcher[] {
       watch(directory, { recursive: true }, (_eventType, fileName) => {
         const changedPath = typeof fileName === "string" && fileName ? resolve(directory, fileName) : directory;
         const reason = relative(GUIDE_PATHS.projectRoot, changedPath) || basename(directory);
-        scheduleBuild(changedPath, reason);
+        scheduleBuild(reason, changedPath);
       })
     ),
     ...GUIDE_BUILD_WATCH_PATHS.files.map((filePath) =>
       watch(filePath, () => {
-        scheduleBuild(filePath, relative(GUIDE_PATHS.projectRoot, filePath) || basename(filePath));
+        scheduleBuild(relative(GUIDE_PATHS.projectRoot, filePath) || basename(filePath), filePath);
       })
     ),
   ];
@@ -131,9 +94,10 @@ function createWatchers(): FSWatcher[] {
 
 function startServer(): void {
   serverProcess?.kill();
+  const serverCommand = resolveGuideServerCommand("dev", GUIDE_PATHS.projectRoot);
   const nextServerProcess = Bun.spawn({
-    cmd: [...serverCommand],
-    cwd: GUIDE_PATHS.projectRoot,
+    cmd: serverCommand.cmd,
+    cwd: serverCommand.cwd,
     stderr: "inherit",
     stdout: "inherit",
   });
@@ -146,16 +110,15 @@ function startServer(): void {
   });
 }
 
-refreshWatchState();
 startServer();
 watchers.push(...createWatchers());
 setTimeout(() => {
   watchersReady = true;
 }, WATCHER_WARMUP_MS);
 
-const runBuild = async (reason: string): Promise<void> => {
+const runBuild = async (reason: string, target: GuideDevBuildTarget): Promise<void> => {
   if (buildInFlight) {
-    buildQueued = true;
+    buildQueuedTarget = mergeQueuedBuildTarget(buildQueuedTarget, target);
     return;
   }
 
@@ -163,13 +126,14 @@ const runBuild = async (reason: string): Promise<void> => {
   writeStructuredLog({
     component: "dev",
     level: "INFO",
-    message: "Rebuilding guide assets",
-    context: { reason },
+    message: target === "full" ? "Rebuilding guide assets and templates" : "Rebuilding guide app assets",
+    context: { reason, target },
   });
 
+  const buildCommand = resolveGuideBuildCommand(target, GUIDE_PATHS.projectRoot);
   const buildProcess = Bun.spawn({
-    cmd: [...buildCommand],
-    cwd: GUIDE_PATHS.projectRoot,
+    cmd: buildCommand.cmd,
+    cwd: buildCommand.cwd,
     stderr: "inherit",
     stdout: "inherit",
   });
@@ -178,7 +142,6 @@ const runBuild = async (reason: string): Promise<void> => {
   buildInFlight = false;
   ignoreWatchEventsUntil = Date.now() + WATCHER_WARMUP_MS;
   if (exitCode === 0) {
-    refreshWatchState();
     startServer();
   }
 
@@ -186,12 +149,13 @@ const runBuild = async (reason: string): Promise<void> => {
     component: "dev",
     level: exitCode === 0 ? "INFO" : "ERROR",
     message: exitCode === 0 ? "Guide rebuild completed" : "Guide rebuild failed",
-    context: { exitCode, reason },
+    context: { exitCode, reason, target },
   });
 
-  if (buildQueued) {
-    buildQueued = false;
-    void runBuild("queued change");
+  if (buildQueuedTarget) {
+    const nextTarget = buildQueuedTarget;
+    buildQueuedTarget = null;
+    void runBuild("queued change", nextTarget);
   }
 };
 
@@ -206,7 +170,9 @@ const shutdown = (exitCode: number): void => {
     buildTimer = null;
   }
 
-  watchers.forEach((watcher) => watcher.close());
+  watchers.forEach((watcher) => {
+    watcher.close();
+  });
   serverProcess?.kill();
 
   writeStructuredLog({

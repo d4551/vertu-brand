@@ -1,14 +1,24 @@
 #!/usr/bin/env bun
 
+import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 
-import { GUIDE_PATHS, GUIDE_PUBLIC_DIRECTORIES, GUIDE_PUBLIC_FILES } from "../src/server/runtime-config";
+import {
+  GUIDE_PATHS,
+  GUIDE_SOCIAL_BUILD_INPUT_FILES,
+  resolveGuidePublicAssetSourcePath,
+  resolveGuidePaths,
+  resolveGuidePublicDirectories,
+  resolveGuidePublicFiles,
+  resolveGuideStylesheetBuildCommand,
+} from "../src/server/runtime-config";
 import { renderDocument } from "../src/server/render/layout";
 import { extractGuideSections, normalizeAuthoringAssetUrls } from "../src/shared/authoring-guide";
 import { GUIDE_SERVER, toGuideRequestUrl } from "../src/shared/config";
 import { writeStructuredLog } from "../src/shared/logger";
 import {
+  SOCIAL_APPROVED_ASSETS,
   buildSocialStaticAssetPath,
   buildSocialStaticCarouselPath,
   resolveCanonicalSocialBuildRequests,
@@ -22,34 +32,18 @@ import { renderSocialAssetPng, renderSocialCarouselFramePng } from "../src/serve
 const decoder = new TextDecoder();
 const stagingBuildDirectory = `${GUIDE_PATHS.buildDirectory}-next-${process.pid}-${crypto.randomUUID()}`;
 
-const toStagingPath = (path: string): string => path.replace(GUIDE_PATHS.buildDirectory, stagingBuildDirectory);
-
-const stagingPaths = {
-  ...GUIDE_PATHS,
+const stagingPaths = resolveGuidePaths({
   buildDirectory: stagingBuildDirectory,
-  clientScriptOutput: toStagingPath(GUIDE_PATHS.clientScriptOutput),
-  downloadGuideHtmlOutput: toStagingPath(GUIDE_PATHS.downloadGuideHtmlOutput),
-  publicRoot: toStagingPath(GUIDE_PATHS.publicRoot),
-  socialManifestOutputRoot: toStagingPath(GUIDE_PATHS.socialManifestOutputRoot),
-  socialPublicOutputRoot: toStagingPath(GUIDE_PATHS.socialPublicOutputRoot),
-  sectionNavigationOutput: toStagingPath(GUIDE_PATHS.sectionNavigationOutput),
-  sectionRegistryOutput: toStagingPath(GUIDE_PATHS.sectionRegistryOutput),
-  stylesheetOutput: toStagingPath(GUIDE_PATHS.stylesheetOutput),
-} as const;
+  projectRoot: GUIDE_PATHS.projectRoot,
+});
 
-const stagingPublicDirectories = GUIDE_PUBLIC_DIRECTORIES.map(({ outputPath, sourcePath }) => ({
-  outputPath: toStagingPath(outputPath),
-  sourcePath,
-}));
-
-const stagingPublicFiles = GUIDE_PUBLIC_FILES.map(({ outputPath, sourcePath }) => ({
-  outputPath: toStagingPath(outputPath),
-  sourcePath,
-}));
+const stagingPublicDirectories = resolveGuidePublicDirectories(stagingPaths);
+const stagingPublicFiles = resolveGuidePublicFiles(stagingPaths);
 const stagingDirectories = [
   ...new Set([
     dirname(stagingPaths.clientScriptOutput),
     dirname(stagingPaths.downloadGuideHtmlOutput),
+    dirname(stagingPaths.socialBuildFingerprintOutput),
     stagingPaths.socialManifestOutputRoot,
     stagingPaths.socialPublicOutputRoot,
     dirname(stagingPaths.sectionNavigationOutput),
@@ -63,6 +57,18 @@ const stagingDirectories = [
 await rm(stagingBuildDirectory, { force: true, recursive: true });
 
 await Promise.all(stagingDirectories.map((directory) => mkdir(directory, { recursive: true })));
+
+const collectNestedFiles = async (directory: string): Promise<string[]> => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nestedFiles = await Promise.all(
+    entries.map(async (entry) => {
+      const entryPath = resolve(directory, entry.name);
+      return entry.isDirectory() ? collectNestedFiles(entryPath) : [entryPath];
+    })
+  );
+
+  return nestedFiles.flat().sort((left, right) => left.localeCompare(right));
+};
 
 const syncGeneratedOutput = async (sourceDirectory: string, destinationDirectory: string): Promise<void> => {
   await mkdir(destinationDirectory, { recursive: true });
@@ -92,6 +98,29 @@ const syncGeneratedOutput = async (sourceDirectory: string, destinationDirectory
       await Bun.write(destinationPath, Bun.file(sourcePath));
     })
   );
+};
+
+const updateHasherWithFile = async (hasher: Bun.CryptoHasher, filePath: string): Promise<void> => {
+  hasher.update(relative(GUIDE_PATHS.projectRoot, filePath));
+  hasher.update(new Uint8Array(await Bun.file(filePath).arrayBuffer()));
+};
+
+const resolveSocialBuildFingerprint = async (canonicalSocialRequestSource: string): Promise<string> => {
+  const hasher = new Bun.CryptoHasher("sha256");
+  const socialAssetSourceFiles = await collectNestedFiles(resolve(GUIDE_PATHS.projectRoot, "assets", "images"));
+  const approvedAssetSourceFiles = Object.values(SOCIAL_APPROVED_ASSETS).map(({ path }) =>
+    resolveGuidePublicAssetSourcePath(path, GUIDE_PATHS.projectRoot)
+  );
+  const inputFiles = [...new Set([...GUIDE_SOCIAL_BUILD_INPUT_FILES, ...socialAssetSourceFiles, ...approvedAssetSourceFiles])]
+    .sort((left, right) => left.localeCompare(right));
+
+  hasher.update(canonicalSocialRequestSource);
+
+  for (const inputFile of inputFiles) {
+    await updateHasherWithFile(hasher, inputFile);
+  }
+
+  return hasher.digest("hex");
 };
 
 const authoringGuideSource = await Bun.file(GUIDE_PATHS.downloadGuideHtmlSource).text();
@@ -131,6 +160,9 @@ await Promise.all([
 ]);
 
 const scriptBuild = await Bun.build({
+  define: {
+    "Bun.env": "undefined",
+  },
   entrypoints: [GUIDE_PATHS.clientScriptEntry],
   format: "esm",
   minify: true,
@@ -149,18 +181,10 @@ if (!scriptBuild.success) {
   );
 }
 
+const stylesheetBuildCommand = resolveGuideStylesheetBuildCommand(stagingPaths);
 const stylesheetBuild = Bun.spawnSync({
-  cmd: [
-    process.execPath,
-    "x",
-    "tailwindcss",
-    "-i",
-    GUIDE_PATHS.stylesheetEntry,
-    "-o",
-    stagingPaths.stylesheetOutput,
-    "--minify",
-  ],
-  cwd: GUIDE_PATHS.projectRoot,
+  cmd: stylesheetBuildCommand.cmd,
+  cwd: stylesheetBuildCommand.cwd,
   stderr: "pipe",
   stdout: "pipe",
 });
@@ -185,36 +209,53 @@ await Promise.all([
 ]);
 
 const canonicalSocialRequests = resolveCanonicalSocialBuildRequests();
+const canonicalSocialRequestSource = JSON.stringify(canonicalSocialRequests);
 const canonicalSocialPackRequests = [
   ...new Map(
     canonicalSocialRequests.map((request) => [`${request.packId}:${request.language}:${request.theme}:${request.section}`, request])
   ).values(),
 ];
-const canonicalSocialWrites = canonicalSocialRequests.map(async (request) => {
-  const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticAssetPath(request));
-  await mkdir(dirname(outputPath), { recursive: true });
-  await Bun.write(outputPath, await renderSocialAssetPng(request));
-});
+const socialBuildFingerprint = await resolveSocialBuildFingerprint(canonicalSocialRequestSource);
+const canReuseCanonicalSocialBuild =
+  existsSync(GUIDE_PATHS.socialBuildFingerprintOutput) &&
+  existsSync(GUIDE_PATHS.socialManifestOutputRoot) &&
+  existsSync(GUIDE_PATHS.socialPublicOutputRoot) &&
+  (await Bun.file(GUIDE_PATHS.socialBuildFingerprintOutput).text()).trim() === socialBuildFingerprint;
 
-const canonicalSocialCarouselWrites = canonicalSocialPackRequests.flatMap((request) =>
-  SOCIAL_PRESET_REGISTRY[request.packId].carouselFrames.map(async (frame) => {
-    const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticCarouselPath(request, frame));
+if (canReuseCanonicalSocialBuild) {
+  await Promise.all([
+    syncGeneratedOutput(GUIDE_PATHS.socialManifestOutputRoot, stagingPaths.socialManifestOutputRoot),
+    syncGeneratedOutput(GUIDE_PATHS.socialPublicOutputRoot, stagingPaths.socialPublicOutputRoot),
+  ]);
+} else {
+  const canonicalSocialWrites = canonicalSocialRequests.map(async (request) => {
+    const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticAssetPath(request));
     await mkdir(dirname(outputPath), { recursive: true });
-    await Bun.write(outputPath, await renderSocialCarouselFramePng(request, frame));
-  })
-);
+    await Bun.write(outputPath, await renderSocialAssetPng(request));
+  });
 
-const canonicalSocialManifestWrites = canonicalSocialPackRequests.map(async (request) => {
-  const outputPath = resolve(
-    stagingPaths.socialManifestOutputRoot,
-    `${request.packId}-${request.language}-${request.theme}-${request.section}.json`
+  const canonicalSocialCarouselWrites = canonicalSocialPackRequests.flatMap((request) =>
+    SOCIAL_PRESET_REGISTRY[request.packId].carouselFrames.map(async (frame) => {
+      const outputPath = resolve(stagingPaths.socialPublicOutputRoot, buildSocialStaticCarouselPath(request, frame));
+      await mkdir(dirname(outputPath), { recursive: true });
+      await Bun.write(outputPath, await renderSocialCarouselFramePng(request, frame));
+    })
   );
-  await mkdir(dirname(outputPath), { recursive: true });
-  const manifest = resolveSocialPackManifest(request);
-  await Bun.write(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
-});
 
-await Promise.all([...canonicalSocialWrites, ...canonicalSocialCarouselWrites, ...canonicalSocialManifestWrites]);
+  const canonicalSocialManifestWrites = canonicalSocialPackRequests.map(async (request) => {
+    const outputPath = resolve(
+      stagingPaths.socialManifestOutputRoot,
+      `${request.packId}-${request.language}-${request.theme}-${request.section}.json`
+    );
+    await mkdir(dirname(outputPath), { recursive: true });
+    const manifest = resolveSocialPackManifest(request);
+    await Bun.write(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  });
+
+  await Promise.all([...canonicalSocialWrites, ...canonicalSocialCarouselWrites, ...canonicalSocialManifestWrites]);
+}
+
+await Bun.write(stagingPaths.socialBuildFingerprintOutput, `${socialBuildFingerprint}\n`);
 
 const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, stylesheetStats, sectionRegistryStats] = await Promise.all([
   stat(stagingPaths.sectionNavigationOutput),
@@ -246,6 +287,7 @@ writeStructuredLog({
     copiedFiles: stagingPublicFiles.length + 3,
     navigationBytes: navigationStats.size,
     scriptBytes: scriptStats.size,
+    socialBuildCache: canReuseCanonicalSocialBuild ? "reused" : "rebuilt",
     socialManifestBytes: socialManifestStats.size,
     socialPublicFiles: socialPublicEntries.length,
     sectionRegistryBytes: sectionRegistryStats.size,

@@ -67,6 +67,24 @@ export interface GuideViewState {
   theme: GuideTheme;
 }
 
+/**
+ * Canonical guide state without error-envelope metadata.
+ */
+export interface GuideResolvedState {
+  language: GuideLanguage;
+  section: GuideSectionId;
+  theme: GuideTheme;
+}
+
+/**
+ * Raw guide state inputs resolved from URL parameters, DOM datasets, or form state.
+ */
+export interface GuideStateInput {
+  language?: string | null;
+  section?: string | null;
+  theme?: string | null;
+}
+
 const LANGUAGE_ALIASES: Record<string, GuideLanguage> = {
   cn: "zh",
   chinese: "zh",
@@ -113,12 +131,40 @@ export const nextGuideLanguage = (current: GuideLanguage): GuideLanguage =>
   current === "en" ? "zh" : current === "zh" ? "bi" : "en";
 
 /**
+ * Resolves a raw guide-state input into the canonical language, section, and theme.
+ */
+export const resolveGuideState = (input: GuideStateInput): GuideResolvedState => {
+  const requestedSectionValue = String(input.section ?? "").trim();
+
+  return {
+    language: normalizeGuideLanguage(input.language ?? null),
+    section: isGuideSectionId(requestedSectionValue) ? requestedSectionValue : "s0",
+    theme: normalizeGuideTheme(input.theme ?? null),
+  };
+};
+
+/**
+ * Resolves the concrete locale key used for monolingual EN/ZH copy selection.
+ */
+export const resolveGuideLocale = (language: GuideLanguage): Extract<GuideLanguage, "en" | "zh"> =>
+  language === "zh" ? "zh" : "en";
+
+/**
+ * Resolves the correct document language tag for the active guide language.
+ */
+export const resolveGuideDocumentLanguageTag = (language: GuideLanguage): "en" | "mul" | "zh" =>
+  language === "bi" ? "mul" : resolveGuideLocale(language);
+
+/**
  * Resolves a query string into the canonical guide view state.
  */
 export const resolveGuideViewState = (url: URL): GuideViewState => {
   const requestedSection = url.searchParams.get("section");
-  const requestedSectionValue = requestedSection ?? "";
-  const section = isGuideSectionId(requestedSectionValue) ? requestedSectionValue : "s0";
+  const state = resolveGuideState({
+    language: url.searchParams.get("lang"),
+    section: requestedSection,
+    theme: url.searchParams.get("theme"),
+  });
 
   return {
     error:
@@ -128,9 +174,9 @@ export const resolveGuideViewState = (url: URL): GuideViewState => {
             invalidSection: requestedSection,
           }
         : null,
-    language: normalizeGuideLanguage(url.searchParams.get("lang")),
-    section,
-    theme: normalizeGuideTheme(url.searchParams.get("theme")),
+    language: state.language,
+    section: state.section,
+    theme: state.theme,
   };
 };
 

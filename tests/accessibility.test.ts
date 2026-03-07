@@ -34,9 +34,9 @@ describe("accessibility regressions", () => {
 
     expect(html).toContain('aria-label="跳转到主内容"');
     expect(html).toContain('aria-label="滚动至指南内容"');
-    /* Cycle buttons: only current language/theme shown; lang=zh shows 中文 */
-    expect(html).toContain('aria-label="中文"');
-    expect(html).toContain('aria-label="深色"');
+    /* Cycle buttons announce the next state they will switch to. */
+    expect(html).toContain('aria-label="切换指南语言为双语"');
+    expect(html).toContain('aria-label="切换指南主题为浅色"');
     expect(html).toContain('aria-label="选择指南主题"');
     expect(html).toContain('aria-label="标志变体"');
     expect(html).toContain('aria-label="传播套件"');

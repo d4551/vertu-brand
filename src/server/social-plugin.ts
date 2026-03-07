@@ -1,20 +1,19 @@
 import { Elysia, t } from "elysia";
 
-import { GUIDE_ROUTES, GUIDE_SERVER, HTMX_REQUEST_HEADERS } from "../shared/config";
+import { GUIDE_REQUEST_ID_HEADER, GUIDE_SERVER, HTMX_REQUEST_HEADERS } from "../shared/config";
 import { resolveGuideSocialQueryValues, toSocialGuideHref } from "../shared/social-toolkit";
 import {
   resolveSocialAttachmentFileName,
   renderSocialAssetPng,
   renderSocialCarouselFramePng,
   resolveSocialPreviewModel,
-  type SocialPreviewModel,
 } from "./social-renderer";
+import { resolveGuideRequestId } from "./observability-plugin";
 import { GUIDE_LANGUAGES, GUIDE_SECTION_IDS, isGuideSectionId, normalizeGuideLanguage } from "../shared/view-state";
 import {
   APPROVED_ASSET_IDS,
   SOCIAL_ROUTE_TEMPLATES,
   SOCIAL_QUERY_PARAMS,
-  type SocialAssetKind,
   SOCIAL_ASSET_KINDS,
   SOCIAL_CHANNELS,
   SOCIAL_PRESET_IDS,
@@ -23,8 +22,8 @@ import {
   resolveSocialPackManifest,
   resolveSocialPackRequest,
   resolveSocialRenderRequest,
-  toSocialPackHref,
   type SocialErrorEnvelope,
+  type SocialPackManifest,
 } from "../shared/social-toolkit";
 import { renderSocialErrorState, renderSocialPreviewMarkup } from "./social-preview-markup";
 
@@ -35,12 +34,15 @@ const socialToolkitService = {
   resolveSocialPreviewModel,
 } as const;
 
-const escapeAttribute = (value: string): string =>
-  value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-
-const escapeHtml = (value: string): string => escapeAttribute(value).replaceAll("'", "&#39;");
-
 const resolveResponseEtag = (body: Uint8Array | string): string => `"${Bun.hash(body).toString(16)}"`;
+
+const resolveSocialResponseHeaders = (
+  request: Request,
+  headers: Record<string, string>
+): Record<string, string> => ({
+  ...headers,
+  [GUIDE_REQUEST_ID_HEADER]: resolveGuideRequestId(request),
+});
 
 const requestIncludesEtag = (request: Request, etag: string): boolean => {
   const ifNoneMatch = request.headers.get("if-none-match");
@@ -63,6 +65,78 @@ const parsePngRouteParam = (rawParam: string | undefined): string | null => {
   const base = value.slice(0, -4);
   return base ? base : null;
 };
+
+const buildSocialErrorResponse = (request: Request, error: SocialErrorEnvelope): Response =>
+  Response.json(error, {
+    headers: resolveSocialResponseHeaders(request, {
+      "Cache-Control": "no-store",
+      "Content-Type": "application/json; charset=utf-8",
+    }),
+    status: 404,
+  });
+
+const buildConditionalBinaryResponse = (
+  request: Request,
+  body: Uint8Array,
+  contentDisposition: string
+): Response => {
+  const etag = resolveResponseEtag(body);
+  const responseHeaders = resolveSocialResponseHeaders(request, {
+    "Cache-Control": GUIDE_SERVER.assetCacheControl,
+    "Content-Disposition": contentDisposition,
+    "Content-Type": "image/png",
+    ETag: etag,
+  });
+
+  if (requestIncludesEtag(request, etag)) {
+    return new Response(null, {
+      headers: responseHeaders,
+      status: 304,
+    });
+  }
+
+  return new Response(Buffer.from(body), {
+    headers: responseHeaders,
+  });
+};
+
+const buildConditionalManifestResponse = (request: Request, manifest: SocialPackManifest): Response => {
+  const serializedManifest = JSON.stringify(manifest);
+  const etag = resolveResponseEtag(serializedManifest);
+  const responseHeaders = resolveSocialResponseHeaders(request, {
+    "Cache-Control": GUIDE_SERVER.manifestCacheControl,
+    "Content-Type": "application/json; charset=utf-8",
+    ETag: etag,
+  });
+
+  if (requestIncludesEtag(request, etag)) {
+    return new Response(null, {
+      headers: responseHeaders,
+      status: 304,
+    });
+  }
+
+  return new Response(serializedManifest, {
+    headers: responseHeaders,
+  });
+};
+
+const buildSocialHtmlResponse = (request: Request, html: string, status = 200): Response =>
+  new Response(html, {
+    headers: resolveSocialResponseHeaders(request, {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/html; charset=utf-8",
+    }),
+    status,
+  });
+
+const buildSocialRedirectResponse = (request: Request, location: string): Response =>
+  new Response(null, {
+    headers: resolveSocialResponseHeaders(request, {
+      Location: location,
+    }),
+    status: 302,
+  });
 
 const socialErrorEnvelopeModel = t.Object({
   code: t.Literal("invalid_social_request"),
@@ -151,15 +225,14 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
   })
   .get(
     SOCIAL_ROUTE_TEMPLATES.assetPng,
-    async ({ params, query, request, set, socialToolkit }) => {
+    async ({ params, query, request, socialToolkit }) => {
       const preset = parsePngRouteParam(params.presetPng);
       if (!preset) {
-        set.status = 404;
-        return {
+        return buildSocialErrorResponse(request, {
           code: "invalid_social_request",
           reason: "invalid_preset",
           value: params.presetPng ?? "",
-        } satisfies SocialErrorEnvelope;
+        });
       }
 
       const resolution = resolveSocialRenderRequest({
@@ -172,50 +245,35 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
       });
 
       if (!resolution.ok) {
-        set.status = 404;
-        return resolution.error;
+        return buildSocialErrorResponse(request, resolution.error);
       }
 
       const body = await socialToolkit.renderSocialAssetPng(resolution.value);
-      const etag = resolveResponseEtag(body);
-      const contentDisposition = `inline; filename="${resolveSocialAttachmentFileName(resolution.value)}"`;
-      const headers = {
-        "Cache-Control": GUIDE_SERVER.assetCacheControl,
-        "Content-Disposition": contentDisposition,
-        "Content-Type": "image/png",
-        ETag: etag,
-      };
-
-      if (requestIncludesEtag(request, etag)) {
-        return new Response(null, {
-          headers,
-          status: 304,
-        });
-      }
-
-      return new Response(Buffer.from(body), {
-        headers,
-      });
+      return buildConditionalBinaryResponse(
+        request,
+        body,
+        `inline; filename="${resolveSocialAttachmentFileName(resolution.value)}"`
+      );
     },
     {
       params: "socialAssetParams",
       query: "socialAssetQuery",
       response: {
+        200: t.File(),
         404: socialErrorEnvelopeModel,
       },
     }
   )
   .get(
     SOCIAL_ROUTE_TEMPLATES.carouselPng,
-    async ({ params, query, request, set, socialToolkit }) => {
+    async ({ params, query, request, socialToolkit }) => {
       const frameValue = parsePngRouteParam(params.framePng);
       if (!frameValue) {
-        set.status = 404;
-        return {
+        return buildSocialErrorResponse(request, {
           code: "invalid_social_request",
           reason: "invalid_carousel_frame",
           value: params.framePng ?? "",
-        } satisfies SocialErrorEnvelope;
+        });
       }
 
       const requestResolution = resolveSocialRenderRequest({
@@ -228,8 +286,7 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
       });
 
       if (!requestResolution.ok) {
-        set.status = 404;
-        return requestResolution.error;
+        return buildSocialErrorResponse(request, requestResolution.error);
       }
 
       const frameResolution = resolveSocialCarouselFrame(
@@ -237,45 +294,28 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
         frameValue
       );
       if (!frameResolution.ok) {
-        set.status = 404;
-        return frameResolution.error;
+        return buildSocialErrorResponse(request, frameResolution.error);
       }
 
       const body = await socialToolkit.renderSocialCarouselFramePng(requestResolution.value, frameResolution.frame);
-      const etag = resolveResponseEtag(body);
-      const contentDisposition = `inline; filename="${resolveSocialAttachmentFileName(
-        requestResolution.value,
-        frameResolution.frame
-      )}"`;
-      const headers = {
-        "Cache-Control": GUIDE_SERVER.assetCacheControl,
-        "Content-Disposition": contentDisposition,
-        "Content-Type": "image/png",
-        ETag: etag,
-      };
-
-      if (requestIncludesEtag(request, etag)) {
-        return new Response(null, {
-          headers,
-          status: 304,
-        });
-      }
-
-      return new Response(Buffer.from(body), {
-        headers,
-      });
+      return buildConditionalBinaryResponse(
+        request,
+        body,
+        `inline; filename="${resolveSocialAttachmentFileName(requestResolution.value, frameResolution.frame)}"`
+      );
     },
     {
       params: "socialCarouselParams",
       query: "socialAssetQuery",
       response: {
+        200: t.File(),
         404: socialErrorEnvelopeModel,
       },
     }
   )
   .get(
     SOCIAL_ROUTE_TEMPLATES.packManifest,
-    ({ params, query, request, requestOrigin, set, socialToolkit }) => {
+    ({ params, query, request, requestOrigin, socialToolkit }) => {
       const resolution = resolveSocialPackRequest({
         approvedAsset: query[SOCIAL_QUERY_PARAMS.approvedAsset],
         language: normalizeGuideLanguage(query[SOCIAL_QUERY_PARAMS.language] ?? null),
@@ -285,8 +325,7 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
       });
 
       if (!resolution.ok) {
-        set.status = 404;
-        return resolution.error;
+        return buildSocialErrorResponse(request, resolution.error);
       }
 
       const manifest = socialToolkit.resolveSocialPackManifest(resolution.value, requestOrigin);
@@ -295,24 +334,7 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
         assets: [...manifest.assets],
         carouselFrames: [...manifest.carouselFrames],
       };
-      const serializedManifest = JSON.stringify(manifestResponse);
-      const etag = resolveResponseEtag(serializedManifest);
-
-      set.headers["Cache-Control"] = GUIDE_SERVER.manifestCacheControl;
-      set.headers["Content-Type"] = "application/json; charset=utf-8";
-      set.headers.ETag = etag;
-
-      if (requestIncludesEtag(request, etag)) {
-        return new Response(null, {
-          headers: {
-            "Cache-Control": GUIDE_SERVER.manifestCacheControl,
-            ETag: etag,
-          },
-          status: 304,
-        });
-      }
-
-      return manifestResponse;
+      return buildConditionalManifestResponse(request, manifestResponse);
     },
     {
       params: "socialPackParams",
@@ -325,7 +347,7 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
   )
   .get(
     SOCIAL_ROUTE_TEMPLATES.preview,
-    ({ query, request, requestOrigin, set, socialToolkit }) => {
+    ({ query, request, requestOrigin, socialToolkit }) => {
       const language = normalizeGuideLanguage(query[SOCIAL_QUERY_PARAMS.language] ?? null);
       const isHtmxRequest = request.headers.get(HTMX_REQUEST_HEADERS.request) === "true";
       const section = String(query[SOCIAL_QUERY_PARAMS.section] ?? "").trim();
@@ -357,23 +379,15 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
           socialTheme: socialQuery.socialTheme,
         });
 
-        return new Response(null, {
-          headers: {
-            Location: location,
-          },
-          status: 302,
-        });
+        return buildSocialRedirectResponse(request, location);
       }
 
-      set.headers["Content-Type"] = "text/html; charset=utf-8";
-
       if (!resolution.ok) {
-        set.status = 404;
-        return renderSocialErrorState(resolution.error, language);
+        return buildSocialHtmlResponse(request, renderSocialErrorState(resolution.error, language), 404);
       }
 
       const model = socialToolkit.resolveSocialPreviewModel(resolution.value, requestOrigin);
-      return renderSocialPreviewMarkup(model);
+      return buildSocialHtmlResponse(request, renderSocialPreviewMarkup(model));
     },
     {
       query: "socialPreviewQuery",

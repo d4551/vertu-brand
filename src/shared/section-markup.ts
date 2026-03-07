@@ -1,13 +1,15 @@
+import { GUIDE_ASSET_OPERATOR_IDS } from "./asset-operator-contract";
 import { GUIDE_ROUTES } from "./config";
 import { UI_COPY, renderLocalizedSpans, resolveCopy } from "./i18n";
 import type { LocalizedCopy } from "./i18n";
 import { stripMarkupText } from "./markup";
 import { GUIDE_HTMX, GUIDE_SELECTORS } from "./shell-contract";
 import {
+  APPROVED_ASSET_IDS,
+  SOCIAL_APPROVED_ASSETS,
   SOCIAL_GUIDE_QUERY_PARAMS,
   SOCIAL_PRESET_IDS,
   SOCIAL_PRESET_REGISTRY,
-  SOCIAL_QUERY_PARAMS,
   resolveSectionSocialPreset,
   type SocialPresetId,
 } from "./social-toolkit";
@@ -62,7 +64,7 @@ const normalizeClassLists = (markup: string): string =>
       .filter((token) => token && !/^reveal(?:-d\d+)?$/.test(token))
       .join(" ");
 
-    return cleaned ? `class="${cleaned}"` : "";
+    return `class="${cleaned}"`;
   });
 
 interface RewriterElementHandle {
@@ -103,8 +105,8 @@ const annotateLocalizedContent = (markup: string): string => {
 
 const localizeTextTokens = (markup: string, language: GuideLanguage): string => {
   return markup.replace(
-    /(<[^>]+data-i18n-text="([^"]+)"[^>]*>)([\s\S]*?)(<\/[^>]+>)/g,
-    (fullMatch, openTag: string, key: string, _inner: string, closeTag: string) =>
+    /(<([a-z][a-z0-9]*)\b[^>]+data-i18n-text="([^"]+)"[^>]*>)([\s\S]*?)(<\/\2>)/g,
+    (fullMatch, openTag: string, _tagName: string, key: string, _inner: string, closeTag: string) =>
       isUiCopyKey(key)
         ? `${openTag}${
             language === "bi"
@@ -158,7 +160,7 @@ const configureSocialToolkitForm = (markup: string): string =>
   markup.replace(
     /<form\b[^>]*\bid="social-toolkit-form"[\s\S]*?>/,
     [
-      `<form id="social-toolkit-form"`,
+      `<form id="${GUIDE_ASSET_OPERATOR_IDS.socialForm}"`,
       `class="social-toolkit-controls"`,
 
       `action="${GUIDE_ROUTES.guide}"`,
@@ -167,7 +169,7 @@ const configureSocialToolkitForm = (markup: string): string =>
       `hx-indicator="${GUIDE_SELECTORS.requestIndicator}"`,
       `hx-disabled-elt="${GUIDE_HTMX.disabledFormElements}"`,
       `hx-swap="innerHTML"`,
-      `hx-target="#social-preview-panel"`,
+      `hx-target="#${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}"`,
       `hx-trigger="submit"`,
       `hx-sync="this:replace"`,
       `>`,
@@ -176,15 +178,21 @@ const configureSocialToolkitForm = (markup: string): string =>
 
 const enhanceDownloadsSectionLayout = (markup: string): string =>
   markup
-    .replace(/class="flex flex-col xl:flex-row gap-8 w-full"/g, 'class="asset-operator-grid"')
-    .replace(/class="flex flex-col xl:flex-row gap-8 w-full mb-8"/g, 'class="asset-operator-grid asset-operator-grid--spaced"')
+    .replace(
+      /class="flex flex-col xl:flex-row gap-8 w-full"/g,
+      'class="grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"'
+    )
+    .replace(
+      /class="flex flex-col xl:flex-row gap-8 w-full mb-8"/g,
+      'class="mb-8 grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"'
+    )
     .replace(
       /class="flex flex-col gap-6 xl:flex-1 bg-base-200 p-6 rounded-xl border border-base-300"/g,
-      'class="asset-operator-panel flex flex-col gap-6 xl:flex-1 bg-base-200 p-6 rounded-xl border border-base-300 shadow-sm"'
+      'class="flex h-full flex-col gap-6 xl:flex-1 rounded-xl border border-base-300 bg-base-200 p-6 shadow-sm"'
     )
     .replace(
       /class="flex-1 flex flex-col items-center justify-center rounded-xl border overflow-hidden relative min-h-\[300px\] gen-preview-surface"/g,
-      'class="asset-preview-panel flex-1 flex flex-col items-center justify-center rounded-xl border overflow-hidden relative min-h-[300px] gen-preview-surface"'
+      'class="asset-preview-panel relative flex h-full min-h-[300px] min-w-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border bg-base-100/70 shadow-sm gen-preview-surface"'
     );
 
 const injectTemplateLibraryMarkup = (markup: string, language: GuideLanguage): string => {
@@ -211,9 +219,9 @@ const localizeGeneratorControls = (markup: string, language: GuideLanguage, sect
   const defaultApprovedAssetId = defaultPreset.approvedAssetId;
 
   result = result.replace(
-    /<select id="gen-variant"[\s\S]*?<\/select>/,
+    new RegExp(`<select id="${GUIDE_ASSET_OPERATOR_IDS.logoVariant}"[\\s\\S]*?<\\/select>`),
     [
-      `<select id="gen-variant" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("logoVariantLabel", language))}">`,
+      `<select id="${GUIDE_ASSET_OPERATOR_IDS.logoVariant}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("logoVariantLabel", language))}">`,
       `<option value="white">${escapeHtml(resolveCopy("genVariantWhite", language))}</option>`,
       `<option value="black">${escapeHtml(resolveCopy("genVariantBlack", language))}</option>`,
       `<option value="gold">${escapeHtml(resolveCopy("genVariantGold", language))}</option>`,
@@ -222,9 +230,9 @@ const localizeGeneratorControls = (markup: string, language: GuideLanguage, sect
   );
 
   result = result.replace(
-    /<select id="social-pack"[\s\S]*?<\/select>/,
+    new RegExp(`<select id="${GUIDE_ASSET_OPERATOR_IDS.socialPack}"[\\s\\S]*?<\\/select>`),
     [
-      `<select id="social-pack" name="${SOCIAL_GUIDE_QUERY_PARAMS.pack}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialPackLabel", language))}">`,
+      `<select id="${GUIDE_ASSET_OPERATOR_IDS.socialPack}" name="${SOCIAL_GUIDE_QUERY_PARAMS.pack}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialPackLabel", language))}">`,
       ...presetOptionIds.map((presetId) => {
         const preset = SOCIAL_PRESET_REGISTRY[presetId];
         const isSelected = presetId === defaultPresetId ? ' selected="selected"' : "";
@@ -237,9 +245,9 @@ const localizeGeneratorControls = (markup: string, language: GuideLanguage, sect
   );
 
   result = result.replace(
-    /<select id="social-format"[\s\S]*?<\/select>/,
+    new RegExp(`<select id="${GUIDE_ASSET_OPERATOR_IDS.socialAssetKind}"[\\s\\S]*?<\\/select>`),
     [
-      `<select id="social-format" name="${SOCIAL_GUIDE_QUERY_PARAMS.asset}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialAssetKindLabel", language))}">`,
+      `<select id="${GUIDE_ASSET_OPERATOR_IDS.socialAssetKind}" name="${SOCIAL_GUIDE_QUERY_PARAMS.asset}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialAssetKindLabel", language))}">`,
       `<option value="og-card">${escapeHtml(resolveCopy("socialAssetKindOgCard", language))}</option>`,
       `<option value="ig-post">${escapeHtml(resolveCopy("socialAssetKindIgPost", language))}</option>`,
       `<option value="ig-story">${escapeHtml(resolveCopy("socialAssetKindIgStory", language))}</option>`,
@@ -254,20 +262,29 @@ const localizeGeneratorControls = (markup: string, language: GuideLanguage, sect
   );
 
   result = result.replace(
-    /<select id="social-approved-asset"[\s\S]*?<\/select>/,
+    new RegExp(`<select id="${GUIDE_ASSET_OPERATOR_IDS.socialApprovedAsset}"[\\s\\S]*?<\\/select>`),
     [
-      `<select id="social-approved-asset" name="${SOCIAL_GUIDE_QUERY_PARAMS.approvedAsset}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialApprovedAssetLabel", language))}">`,
-      `<option value="signature-black-red"${defaultApprovedAssetId === "signature-black-red" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialApprovedAssetSignature", language))}</option>`,
-      `<option value="agent-q"${defaultApprovedAssetId === "agent-q" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialApprovedAssetAgentQ", language))}</option>`,
-      `<option value="quantum-flip"${defaultApprovedAssetId === "quantum-flip" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialApprovedAssetQuantumFlip", language))}</option>`,
+      `<select id="${GUIDE_ASSET_OPERATOR_IDS.socialApprovedAsset}" name="${SOCIAL_GUIDE_QUERY_PARAMS.approvedAsset}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialApprovedAssetLabel", language))}">`,
+      ...APPROVED_ASSET_IDS.map((assetId) => {
+        const asset = SOCIAL_APPROVED_ASSETS[assetId];
+        const optionLabel =
+          language === "zh"
+            ? asset.pickerLabel.zh
+            : language === "bi"
+              ? `${asset.pickerLabel.en} · ${asset.pickerLabel.zh}`
+              : asset.pickerLabel.en;
+        return `<option value="${assetId}"${
+          defaultApprovedAssetId === assetId ? ' selected="selected"' : ""
+        }>${escapeHtml(optionLabel)}</option>`;
+      }),
       "</select>",
     ].join("")
   );
 
   result = result.replace(
-    /<select id="social-theme"[\s\S]*?<\/select>/,
+    new RegExp(`<select id="${GUIDE_ASSET_OPERATOR_IDS.socialTheme}"[\\s\\S]*?<\\/select>`),
     [
-      `<select id="social-theme" name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialThemeLabel", language))}">`,
+      `<select id="${GUIDE_ASSET_OPERATOR_IDS.socialTheme}" name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}" class="select select-bordered select-sm w-full bg-base-300 border-base-300 text-base-content" aria-label="${escapeAttribute(resolveCopy("socialThemeLabel", language))}">`,
       `<option value="dark"${defaultTheme === "dark" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialThemeDark", language))}</option>`,
       `<option value="light"${defaultTheme === "light" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialThemeLight", language))}</option>`,
       `<option value="gold"${defaultTheme === "gold" ? ' selected="selected"' : ""}>${escapeHtml(resolveCopy("socialThemeGold", language))}</option>`,
@@ -280,30 +297,22 @@ const localizeGeneratorControls = (markup: string, language: GuideLanguage, sect
 
 const localizeGeneratorPlaceholders = (markup: string, _language: GuideLanguage): string => markup;
 
-const localizeCanvasLabels = (markup: string, language: GuideLanguage): string =>
-  markup
-    .replace(
-      /aria-label="Logo generator preview"/g,
-      `aria-label="${escapeAttribute(resolveCopy("logoGeneratorPreview", language))}"`
-    )
-    .replace(
-      /aria-label="Campaign toolkit preview"/g,
-      `aria-label="${escapeAttribute(resolveCopy("socialToolkitPreviewAria", language))}"`
-    )
-    .replace(/<div([^>]*\bid="social-preview-panel"[^>]*)>/g, (fullMatch, attributes: string) =>
-      attributes.includes("aria-busy=") ? fullMatch : `<div${attributes} aria-busy="false">`
-    );
+const localizeCanvasLabels = (markup: string, _language: GuideLanguage): string =>
+  markup.replace(
+    new RegExp(`<div([^>]*\\bid="${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}"[^>]*)>`, "g"),
+    (fullMatch, attributes: string) => (attributes.includes("aria-busy=") ? fullMatch : `<div${attributes} aria-busy="false">`)
+  );
 
 const localizeControlAriaLabels = (markup: string, language: GuideLanguage): string => {
   let result = markup;
 
   const controlLabels = {
-    "gen-padding": resolveCopy("logoPaddingLabel", language),
-    "gen-transparent": resolveCopy("logoTransparentLabel", language),
-    "social-approved-asset": resolveCopy("socialApprovedAssetLabel", language),
-    "social-format": resolveCopy("socialAssetKindLabel", language),
-    "social-pack": resolveCopy("socialPackLabel", language),
-    "social-theme": resolveCopy("socialThemeLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.logoPadding]: resolveCopy("logoPaddingLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.logoTransparent]: resolveCopy("logoTransparentLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.socialApprovedAsset]: resolveCopy("socialApprovedAssetLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.socialAssetKind]: resolveCopy("socialAssetKindLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.socialPack]: resolveCopy("socialPackLabel", language),
+    [GUIDE_ASSET_OPERATOR_IDS.socialTheme]: resolveCopy("socialThemeLabel", language),
     typeFont: resolveCopy("playgroundFontLabel", language),
     typeSize: resolveCopy("playgroundSizeLabel", language),
     typeTrack: resolveCopy("playgroundTrackingLabel", language),
@@ -363,4 +372,4 @@ const escapeAttribute = (value: string): string =>
 const escapeHtml = (value: string): string => escapeAttribute(value).replaceAll("'", "&#39;");
 
 const isUiCopyKey = (value: string): value is keyof typeof UI_COPY =>
-  Object.prototype.hasOwnProperty.call(UI_COPY, value);
+  Object.hasOwn(UI_COPY, value);

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { app } from "../src/server/app";
-import { HTMX_REQUEST_HEADERS } from "../src/shared/config";
+import { GUIDE_BRAND_ASSETS, GUIDE_DOWNLOADS, GUIDE_REQUEST_ID_HEADER, HTMX_REQUEST_HEADERS } from "../src/shared/config";
 import { GUIDE_DOM_IDS } from "../src/shared/shell-contract";
 
 let liveServer: ReturnType<typeof app.listen> | null = null;
@@ -48,6 +48,7 @@ describe("live HTTP smoke", () => {
     const historyRestoreHtml = await historyRestoreResponse.text();
 
     expect(fullResponse.status).toBe(200);
+    expect(fullResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(fullResponse.headers.get("vary")).toContain("HX-History-Restore-Request");
     expect(fullResponse.headers.get("vary")).toContain("HX-Target");
     expect(fullHtml.startsWith("<!DOCTYPE html>")).toBe(true);
@@ -59,15 +60,18 @@ describe("live HTTP smoke", () => {
     expect(fullHtml).not.toContain("/scripts/vendor/prism.min.js");
     expect(fullHtml).not.toContain("/styles/vendor/prism-tomorrow.min.css");
     expect(fragmentResponse.status).toBe(200);
+    expect(fragmentResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(fragmentHtml.startsWith("<!DOCTYPE html>")).toBe(false);
     expect(fragmentHtml).toContain(`id="${GUIDE_DOM_IDS.shell}"`);
     expect(fragmentHtml).toContain('data-active-section="s14"');
     expect(fragmentHtml).not.toContain(`id="${GUIDE_DOM_IDS.page}"`);
     expect(pageResponse.status).toBe(200);
+    expect(pageResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(pageHtml.startsWith("<!DOCTYPE html>")).toBe(false);
     expect(pageHtml).toContain(`id="${GUIDE_DOM_IDS.page}"`);
     expect(pageHtml).toContain(`id="${GUIDE_DOM_IDS.coverScroll}"`);
     expect(historyRestoreResponse.status).toBe(200);
+    expect(historyRestoreResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(historyRestoreHtml.startsWith("<!DOCTYPE html>")).toBe(true);
     expect(historyRestoreHtml).toContain("hx-history-elt");
     expect(fullHtml).toContain(`id="${GUIDE_DOM_IDS.requestIndicator}"`);
@@ -78,12 +82,12 @@ describe("live HTTP smoke", () => {
     const scriptBody = await scriptResponse.text();
     const stylesheetResponse = await fetch(`${baseUrl}/assets/guide.css`);
     const stylesheetBody = await stylesheetResponse.text();
-    const guideDownloadResponse = await fetch(`${baseUrl}/downloads/vertu-brand-guide.html`, {
+    const guideDownloadResponse = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-guide"].href}`, {
       method: "HEAD",
     });
-    const guideDownloadHtmlResponse = await fetch(`${baseUrl}/downloads/vertu-brand-guide.html`);
+    const guideDownloadHtmlResponse = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-guide"].href}`);
     const guideDownloadHtml = await guideDownloadHtmlResponse.text();
-    const assetHeadResponse = await fetch(`${baseUrl}/VERTU-Logo-Black.png`, { method: "HEAD" });
+    const assetHeadResponse = await fetch(`${baseUrl}${GUIDE_BRAND_ASSETS.logoBlack}`, { method: "HEAD" });
     const sourceFileResponse = await fetch(`${baseUrl}/README.md`, { method: "HEAD" });
     const authoringStylesheetResponse = await fetch(`${baseUrl}/styles/brand-guide.css`, { method: "HEAD" });
     const vendoredHtmxResponse = await fetch(`${baseUrl}/scripts/vendor/htmx.min.js`, { method: "HEAD" });
@@ -99,6 +103,7 @@ describe("live HTTP smoke", () => {
     expect(stylesheetResponse.headers.get("content-type")).toContain("text/css");
     expect(stylesheetBody).toContain("--color-v-gold");
     expect(guideDownloadResponse.status).toBe(200);
+    expect(guideDownloadResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(guideDownloadResponse.headers.get("content-disposition")).toContain("vertu-brand-guide.html");
     expect(guideDownloadHtmlResponse.status).toBe(200);
     expect(guideDownloadHtml).toContain(`id="${GUIDE_DOM_IDS.page}"`);
@@ -113,12 +118,12 @@ describe("live HTTP smoke", () => {
   });
 
   test("sets Content-Disposition attachment headers on all downloadable assets", async () => {
-    const pptxHead = await fetch(`${baseUrl}/downloads/VERTU-Template.pptx`, { method: "HEAD" });
-    const pptxGet = await fetch(`${baseUrl}/downloads/VERTU-Template.pptx`);
-    const docxHead = await fetch(`${baseUrl}/downloads/VERTU-Letterhead.docx`, { method: "HEAD" });
-    const docxGet = await fetch(`${baseUrl}/downloads/VERTU-Letterhead.docx`);
-    const logoHead = await fetch(`${baseUrl}/downloads/VERTU-Logo-Gold.png`, { method: "HEAD" });
-    const guideHead = await fetch(`${baseUrl}/downloads/vertu-brand-guide.html`, { method: "HEAD" });
+    const pptxHead = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-pptx"].href}`, { method: "HEAD" });
+    const pptxGet = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-pptx"].href}`);
+    const docxHead = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-docx"].href}`, { method: "HEAD" });
+    const docxGet = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-docx"].href}`);
+    const logoHead = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-logo-gold"].href}`, { method: "HEAD" });
+    const guideHead = await fetch(`${baseUrl}${GUIDE_DOWNLOADS["dl-guide"].href}`, { method: "HEAD" });
 
     expect(pptxHead.status).toBe(200);
     expect(pptxHead.headers.get("content-disposition")).toContain("attachment");

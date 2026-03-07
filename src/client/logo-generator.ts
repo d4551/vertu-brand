@@ -1,8 +1,10 @@
-const LOGO_DEFAULTS = {
-  black: "#F2EDE5",
-  gold: "#111111",
-  white: "#080808",
-} as const;
+import {
+  GUIDE_ASSET_OPERATOR_IDS,
+  GUIDE_ASSET_OPERATOR_SELECTORS,
+} from "../shared/asset-operator-contract";
+import { GUIDE_BRAND_COLOR_TOKENS } from "../shared/brand-tokens";
+
+const LOGO_DEFAULT_BACKGROUND = `#${GUIDE_BRAND_COLOR_TOKENS.black}`;
 
 const LOGO_CANVAS_LAYOUT = {
   maxDevicePixelRatio: 2,
@@ -16,6 +18,9 @@ const LOGO_CONTRAST_POLICY = {
   gold: { maxBackgroundLuminance: 0.94 },
   white: { maxBackgroundLuminance: 0.82 },
 } as const;
+
+let activeLogoGeneratorCleanupController: AbortController | null = null;
+let activeLogoGeneratorCanvas: HTMLCanvasElement | null = null;
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
@@ -47,7 +52,7 @@ const relativeLuminance = (hexColor: string): number => {
 };
 
 const hexToRgb = (hexColor: string): { b: number; g: number; r: number } => {
-  const normalized = hexColor.replace("#", "");
+  const normalized = hexColor.replace("#", "").trim();
   const value =
     normalized.length === 3
       ? normalized
@@ -56,10 +61,14 @@ const hexToRgb = (hexColor: string): { b: number; g: number; r: number } => {
           .join("")
       : normalized;
 
+  const r = Number.parseInt(value.slice(0, 2), 16);
+  const g = Number.parseInt(value.slice(2, 4), 16);
+  const b = Number.parseInt(value.slice(4, 6), 16);
+
   return {
-    b: Number.parseInt(value.slice(4, 6), 16),
-    g: Number.parseInt(value.slice(2, 4), 16),
-    r: Number.parseInt(value.slice(0, 2), 16),
+    b: Number.isNaN(b) ? 0 : b,
+    g: Number.isNaN(g) ? 0 : g,
+    r: Number.isNaN(r) ? 0 : r,
   };
 };
 
@@ -80,21 +89,27 @@ export const initializeLogoGenerator = ({
   showToast,
   triggerDownload,
 }: LogoGeneratorDependencies): void => {
-  const canvas = document.getElementById("gen-canvas");
+  const canvas = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoCanvas);
   if (!(canvas instanceof HTMLCanvasElement) || canvas.dataset.enhanced === "true") {
     return;
   }
 
-  const selectVariant = document.getElementById("gen-variant");
-  const inputPadding = document.getElementById("gen-padding");
-  const inputBgColor = document.getElementById("gen-bgcolor");
-  const inputTransparent = document.getElementById("gen-transparent");
-  const buttonDownload = document.getElementById("gen-download-btn");
-  const feedback = document.getElementById("gen-contrast-feedback");
+  if (activeLogoGeneratorCanvas && activeLogoGeneratorCanvas !== canvas) {
+    activeLogoGeneratorCleanupController?.abort();
+    activeLogoGeneratorCleanupController = null;
+    activeLogoGeneratorCanvas = null;
+  }
+
+  const selectVariant = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoVariant);
+  const inputPadding = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoPadding);
+  const inputBgColor = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoBackgroundColor);
+  const inputTransparent = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoTransparent);
+  const buttonDownload = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoDownloadButton);
+  const feedback = document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoContrastFeedback);
   const logoSources = {
-    black: document.getElementById("src-logo-black"),
-    gold: document.getElementById("src-logo-gold"),
-    white: document.getElementById("src-logo-white"),
+    black: document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoSourceBlack),
+    gold: document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoSourceGold),
+    white: document.getElementById(GUIDE_ASSET_OPERATOR_IDS.logoSourceWhite),
   } as const;
 
   if (
@@ -112,9 +127,12 @@ export const initializeLogoGenerator = ({
   if (!ctx) {
     return;
   }
+  const cleanupController = new AbortController();
 
   canvas.dataset.enhanced = "true";
-  inputBgColor.value = cssValue("--v-black", LOGO_DEFAULTS.white);
+  activeLogoGeneratorCanvas = canvas;
+  activeLogoGeneratorCleanupController = cleanupController;
+  inputBgColor.value = cssValue("--v-black", LOGO_DEFAULT_BACKGROUND);
 
   const readVariant = (): keyof typeof logoSources =>
     selectVariant.value === "black" || selectVariant.value === "gold" ? selectVariant.value : "white";
@@ -122,7 +140,7 @@ export const initializeLogoGenerator = ({
   const readPadding = (): number => clamp(Number(inputPadding.value) || 40, 8, 300);
 
   const resolveCanvasWidth = (): number => {
-    const previewSurface = canvas.closest<HTMLElement>(".asset-preview-panel");
+    const previewSurface = canvas.closest<HTMLElement>(GUIDE_ASSET_OPERATOR_SELECTORS.logoPreviewSurface);
     const containerWidth = previewSurface?.clientWidth ?? canvas.parentElement?.clientWidth ?? canvas.clientWidth;
     const availableWidth = Math.max(containerWidth - LOGO_CANVAS_LAYOUT.surfaceInsetPx, LOGO_CANVAS_LAYOUT.minWidthPx);
     const devicePixelRatio = Math.min(window.devicePixelRatio || 1, LOGO_CANVAS_LAYOUT.maxDevicePixelRatio);
@@ -139,7 +157,7 @@ export const initializeLogoGenerator = ({
     const source = logoSources[variant];
     const image = source instanceof HTMLImageElement ? source : null;
     const isTransparent = inputTransparent.checked;
-    const background = inputBgColor.value || cssValue("--v-black", LOGO_DEFAULTS.white);
+    const background = inputBgColor.value || cssValue("--v-black", LOGO_DEFAULT_BACKGROUND);
 
     if (!image || !image.complete || !image.naturalWidth || !image.naturalHeight) {
       feedback.textContent = shellDataset("toastLogoSourceUnavailable");
@@ -195,16 +213,16 @@ export const initializeLogoGenerator = ({
   };
 
   [selectVariant, inputPadding, inputBgColor, inputTransparent].forEach((element) => {
-    element.addEventListener("input", drawPreview);
-    element.addEventListener("change", drawPreview);
+    element.addEventListener("input", drawPreview, { signal: cleanupController.signal });
+    element.addEventListener("change", drawPreview, { signal: cleanupController.signal });
   });
 
-  window.addEventListener("resize", drawPreview);
+  window.addEventListener("resize", drawPreview, { signal: cleanupController.signal });
 
-  buttonDownload.addEventListener("click", requestDownload);
+  buttonDownload.addEventListener("click", requestDownload, { signal: cleanupController.signal });
   Object.values(logoSources).forEach((source) => {
     if (source instanceof HTMLImageElement && !source.complete) {
-      source.addEventListener("load", drawPreview);
+      source.addEventListener("load", drawPreview, { signal: cleanupController.signal });
     }
   });
 

@@ -1,7 +1,7 @@
 /**
  * Canonical guide navigation generated from the authoring source.
  */
-export { GUIDE_NAVIGATION } from "../../../.generated/content/navigation.generated.ts";
+export { GUIDE_NAVIGATION } from "./generated";
 
 /**
  * Navigation item metadata used by the SSR shell.

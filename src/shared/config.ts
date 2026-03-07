@@ -1,7 +1,18 @@
+import { GUIDE_RUNTIME_SETTINGS } from "./runtime-settings";
+
 /**
  * Shared HTMX cache-vary contract for fragment and history-aware navigation.
  */
 export const HTMX_VARY_HEADER = "HX-Request, HX-History-Restore-Request, HX-Target";
+
+const GUIDE_SERVER_PROTOCOL = "http";
+const GUIDE_DOWNLOADS_ROUTE = "/downloads";
+const GUIDE_IMAGE_ASSETS_ROUTE = "/assets/images";
+
+/**
+ * Shared response header used to propagate request correlation ids.
+ */
+export const GUIDE_REQUEST_ID_HEADER = GUIDE_RUNTIME_SETTINGS.requestIdHeader;
 
 /**
  * Stable HTMX request headers used by the SSR shell and test suite.
@@ -20,16 +31,50 @@ export const HTMX_CONFIG = {
   refreshOnHistoryMiss: false,
 } as const;
 
+const toGuideCacheControl = (maxAgeSeconds: number, staleWhileRevalidateSeconds: number): string =>
+  `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${staleWhileRevalidateSeconds}`;
+
+/**
+ * Builds the canonical local origin for app-handle tests and social URL defaults.
+ */
+export const toGuideOrigin = (port: number, host = GUIDE_RUNTIME_SETTINGS.host): string =>
+  `${GUIDE_SERVER_PROTOCOL}://${host}:${port}`;
+
+/**
+ * Builds the public download href for a generated asset file name.
+ */
+export const toGuideDownloadHref = (fileName: string): string => `${GUIDE_DOWNLOADS_ROUTE}/${fileName}`;
+
+/**
+ * Builds the root-served public asset href for a canonical brand-owned file.
+ */
+export const toGuidePublicAssetHref = (fileName: string): string => `/${fileName}`;
+
+/**
+ * Builds the public href for a generated image asset served from `/assets/images`.
+ */
+export const toGuideImageAssetHref = (fileName: string): string => `${GUIDE_IMAGE_ASSETS_ROUTE}/${fileName}`;
+
 /**
  * Shared server runtime defaults for the local boot flow and static delivery.
  */
 export const GUIDE_SERVER = {
-  assetCacheControl: "public, max-age=86400, stale-while-revalidate=604800",
-  defaultPort: 3000,
-  localOrigin: "http://localhost:3000",
-  manifestCacheControl: "public, max-age=3600, stale-while-revalidate=86400",
-  servePort: 3090,
-  staticAssetCacheControl: "public, max-age=3600, stale-while-revalidate=86400",
+  assetCacheControl: toGuideCacheControl(
+    GUIDE_RUNTIME_SETTINGS.socialAssetMaxAgeSeconds,
+    GUIDE_RUNTIME_SETTINGS.socialAssetStaleWhileRevalidateSeconds
+  ),
+  defaultPort: GUIDE_RUNTIME_SETTINGS.defaultPort,
+  host: GUIDE_RUNTIME_SETTINGS.host,
+  localOrigin: toGuideOrigin(GUIDE_RUNTIME_SETTINGS.defaultPort, GUIDE_RUNTIME_SETTINGS.host),
+  manifestCacheControl: toGuideCacheControl(
+    GUIDE_RUNTIME_SETTINGS.manifestMaxAgeSeconds,
+    GUIDE_RUNTIME_SETTINGS.manifestStaleWhileRevalidateSeconds
+  ),
+  servePort: GUIDE_RUNTIME_SETTINGS.servePort,
+  staticAssetCacheControl: toGuideCacheControl(
+    GUIDE_RUNTIME_SETTINGS.staticAssetMaxAgeSeconds,
+    GUIDE_RUNTIME_SETTINGS.staticAssetStaleWhileRevalidateSeconds
+  ),
 } as const;
 
 /**
@@ -37,7 +82,8 @@ export const GUIDE_SERVER = {
  */
 export const GUIDE_ROUTES = {
   clientScript: "/assets/guide.js",
-  downloadsHtml: "/downloads/vertu-brand-guide.html",
+  downloads: GUIDE_DOWNLOADS_ROUTE,
+  downloadsHtml: toGuideDownloadHref("vertu-brand-guide.html"),
   guide: "/",
   socialAsset: "/social",
   socialPack: "/social/packs",
@@ -52,7 +98,7 @@ export const GUIDE_DOWNLOADS = {
   "dl-docx": {
     contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     fileName: "VERTU-Letterhead.docx",
-    href: "/downloads/VERTU-Letterhead.docx",
+    href: toGuideDownloadHref("VERTU-Letterhead.docx"),
     toastDatasetKey: "toastAssetDownload",
   },
   "dl-guide": {
@@ -64,25 +110,25 @@ export const GUIDE_DOWNLOADS = {
   "dl-logo-black": {
     contentType: "image/png",
     fileName: "VERTU-Logo-Black.png",
-    href: "/downloads/VERTU-Logo-Black.png",
+    href: toGuideDownloadHref("VERTU-Logo-Black.png"),
     toastDatasetKey: "toastAssetDownload",
   },
   "dl-logo-gold": {
     contentType: "image/png",
     fileName: "VERTU-Logo-Gold.png",
-    href: "/downloads/VERTU-Logo-Gold.png",
+    href: toGuideDownloadHref("VERTU-Logo-Gold.png"),
     toastDatasetKey: "toastAssetDownload",
   },
   "dl-logo-white": {
     contentType: "image/png",
     fileName: "VERTU-Logo-White.png",
-    href: "/downloads/VERTU-Logo-White.png",
+    href: toGuideDownloadHref("VERTU-Logo-White.png"),
     toastDatasetKey: "toastAssetDownload",
   },
   "dl-pptx": {
     contentType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     fileName: "VERTU-Template.pptx",
-    href: "/downloads/VERTU-Template.pptx",
+    href: toGuideDownloadHref("VERTU-Template.pptx"),
     toastDatasetKey: "toastAssetDownload",
   },
 } as const;
@@ -91,9 +137,9 @@ export const GUIDE_DOWNLOADS = {
  * Shared brand assets surfaced directly by the generated public runtime.
  */
 export const GUIDE_BRAND_ASSETS = {
-  logoBlack: "/VERTU-Logo-Black.png",
-  logoGold: "/VERTU-Logo-Gold.png",
-  logoWhite: "/VERTU-Logo-White.png",
+  logoBlack: toGuidePublicAssetHref("VERTU-Logo-Black.png"),
+  logoGold: toGuidePublicAssetHref("VERTU-Logo-Gold.png"),
+  logoWhite: toGuidePublicAssetHref("VERTU-Logo-White.png"),
 } as const;
 
 /**

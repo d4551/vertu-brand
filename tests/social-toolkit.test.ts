@@ -20,7 +20,13 @@ import {
   toSocialGuideHref,
   type SocialRenderRequest,
 } from "../src/shared/social-toolkit";
-import { GUIDE_ROUTES, GUIDE_SERVER, HTMX_REQUEST_HEADERS, toGuideRequestUrl } from "../src/shared/config";
+import {
+  GUIDE_REQUEST_ID_HEADER,
+  GUIDE_ROUTES,
+  GUIDE_SERVER,
+  HTMX_REQUEST_HEADERS,
+  toGuideRequestUrl,
+} from "../src/shared/config";
 import { GUIDE_PATHS } from "../src/server/runtime-config";
 
 const launchRequest: SocialRenderRequest = {
@@ -309,6 +315,7 @@ describe("social toolkit routes", () => {
     expect(response.headers.get("content-type")).toContain("image/png");
     expect(response.headers.get("cache-control")).toContain("max-age");
     expect(response.headers.get("etag")).toBeTruthy();
+    expect(response.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(buffer[0]).toBe(137);
     expect(buffer[1]).toBe(80);
     expect(buffer.length).toBeGreaterThan(1000);
@@ -330,6 +337,7 @@ describe("social toolkit routes", () => {
     expect(etag).toBeTruthy();
     expect(secondResponse.status).toBe(304);
     expect(secondResponse.headers.get("etag")).toBe(etag);
+    expect(secondResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
   });
 
   test("renders carousel frames and rejects invalid frame ids deterministically", async () => {
@@ -338,7 +346,9 @@ describe("social toolkit routes", () => {
 
     expect(valid.status).toBe(200);
     expect(valid.headers.get("content-type")).toContain("image/png");
+    expect(valid.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(invalid.status).toBe(404);
+    expect(invalid.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(await invalid.json()).toEqual({
       code: "invalid_social_request",
       reason: "invalid_carousel_frame",
@@ -367,6 +377,7 @@ describe("social toolkit routes", () => {
     expect(manifestWithAssetResponse.status).toBe(200);
     expect(manifestResponse.headers.get("content-type")).toContain("application/json");
     expect(manifestResponse.headers.get("etag")).toBeTruthy();
+    expect(manifestResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(manifest.packId).toBe("campaign-launch");
     expect(manifestWithAsset.packId).toBe("campaign-launch");
     expect(manifest.assets.length).toBeGreaterThan(3);
@@ -375,6 +386,7 @@ describe("social toolkit routes", () => {
     expect("carouselHeading" in manifest).toBe(false);
 
     expect(previewResponse.status).toBe(200);
+    expect(previewResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(previewMarkup).toContain('data-social-state="success"');
     expect(previewMarkup).toContain("campaign-launch");
     expect(previewMarkup).toContain("Download Manifest");
@@ -385,6 +397,7 @@ describe("social toolkit routes", () => {
     const previewResponse = await app.handle(new Request(toGuideRequestUrl(buildSocialPreviewPath())));
 
     expect(previewResponse.status).toBe(302);
+    expect(previewResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(previewResponse.headers.get("location")).toBe(
       `/?section=s6&lang=en&theme=dark&${SOCIAL_GUIDE_QUERY_PARAMS.pack}=campaign-launch&${SOCIAL_GUIDE_QUERY_PARAMS.asset}=og-card&${SOCIAL_GUIDE_QUERY_PARAMS.approvedAsset}=agent-q&${SOCIAL_GUIDE_QUERY_PARAMS.theme}=dark`
     );
@@ -413,7 +426,7 @@ describe("social toolkit routes", () => {
     expect(previewMarkup).toContain(
       '<span data-lang-en="" class="guide-copy-en" lang="en">Preview</span><span data-lang-cn="" class="guide-copy-zh" lang="zh-Hans">预览</span>'
     );
-    expect(previewMarkup).toContain('aria-label="Preview · 预览');
+    expect(previewMarkup).toContain('aria-label="Preview carousel frame 1 · 预览轮播帧 1"');
   });
 
   test("renders localized reason labels in social preview error fragments", async () => {
@@ -427,6 +440,7 @@ describe("social toolkit routes", () => {
     const zhErrorMarkup = await zhErrorResponse.text();
 
     expect(zhErrorResponse.status).toBe(404);
+    expect(zhErrorResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(zhErrorMarkup).toContain("主题无效");
     expect(zhErrorMarkup).not.toContain("invalid_theme");
   });
@@ -448,6 +462,7 @@ describe("social toolkit routes", () => {
     expect(etag).toBeTruthy();
     expect(secondResponse.status).toBe(304);
     expect(secondResponse.headers.get("etag")).toBe(etag);
+    expect(secondResponse.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
   });
 
   test("rejects invalid social route inputs with deterministic error envelopes", async () => {
@@ -473,6 +488,7 @@ describe("social toolkit routes", () => {
     const invalidPack = await app.handle(new Request(toGuideRequestUrl(buildSocialPackPath({ packId: "nope" }))));
 
     expect(invalidTheme.status).toBe(404);
+    expect(invalidTheme.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(await invalidTheme.json()).toEqual({
       code: "invalid_social_request",
       reason: "invalid_theme",
@@ -480,6 +496,7 @@ describe("social toolkit routes", () => {
     });
 
     expect(invalidApprovedAsset.status).toBe(404);
+    expect(invalidApprovedAsset.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(await invalidApprovedAsset.json()).toEqual({
       code: "invalid_social_request",
       reason: "invalid_approved_asset",
@@ -487,6 +504,7 @@ describe("social toolkit routes", () => {
     });
 
     expect(invalidAssetForPreset.status).toBe(404);
+    expect(invalidAssetForPreset.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(await invalidAssetForPreset.json()).toEqual({
       code: "invalid_social_request",
       reason: "invalid_asset_for_preset",
@@ -494,6 +512,7 @@ describe("social toolkit routes", () => {
     });
 
     expect(invalidPack.status).toBe(404);
+    expect(invalidPack.headers.get(GUIDE_REQUEST_ID_HEADER)).toBeString();
     expect(await invalidPack.json()).toEqual({
       code: "invalid_social_request",
       reason: "invalid_pack",

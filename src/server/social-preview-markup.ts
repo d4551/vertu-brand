@@ -1,11 +1,14 @@
-import { renderLocalizedSpans, renderVisibleCopy, resolveCopy } from "../shared/i18n";
+import { GUIDE_ASSET_OPERATOR_IDS } from "../shared/asset-operator-contract";
+import { renderLocalizedSpans, renderVisibleCopy, resolveCopy, type UI_COPY } from "../shared/i18n";
 import {
+  normalizeGuideSocialPreviewState,
   resolveSocialRenderRequest,
   resolveGuideSocialQueryValues,
   resolveSocialPresetCopy,
   toSocialPackHref,
   type SocialAssetKind,
   type SocialErrorEnvelope,
+  type GuideSocialPreviewState,
   type SocialPackId,
   type SocialGuideQueryValues,
   type SocialTheme,
@@ -19,6 +22,7 @@ import { resolveSocialPreviewModel, type SocialPreviewModel } from "./social-ren
 export interface GuideSocialPreviewRenderModel {
   formValues: SocialGuideQueryValues;
   previewMarkup: string | null;
+  previewState: GuideSocialPreviewState;
 }
 
 const escapeAttribute = (value: string): string =>
@@ -48,37 +52,33 @@ const resolveSocialErrorReasonLabel = (reason: SocialErrorEnvelope["reason"], la
   return resolveCopy(reasonCopyKey[reason], language);
 };
 
-const resolveAssetKindLabel = (assetKind: SocialAssetKind, language: GuideLanguage): string => {
-  const assetKindCopyKey = {
-    "announcement-card": "socialAssetKindAnnouncement",
-    "docs-header": "socialAssetKindDocsHeader",
-    "event-invite": "socialAssetKindEventInvite",
-    "ig-post": "socialAssetKindIgPost",
-    "ig-story": "socialAssetKindIgStory",
-    "linkedin-post": "socialAssetKindLinkedin",
-    "og-card": "socialAssetKindOgCard",
-    "quote-card": "socialAssetKindQuote",
-    "x-header": "socialAssetKindXHeader",
-  } as const;
+const ASSET_KIND_COPY_KEYS = {
+  "announcement-card": "socialAssetKindAnnouncement",
+  "docs-header": "socialAssetKindDocsHeader",
+  "event-invite": "socialAssetKindEventInvite",
+  "ig-post": "socialAssetKindIgPost",
+  "ig-story": "socialAssetKindIgStory",
+  "linkedin-post": "socialAssetKindLinkedin",
+  "og-card": "socialAssetKindOgCard",
+  "quote-card": "socialAssetKindQuote",
+  "x-header": "socialAssetKindXHeader",
+} as const satisfies Record<SocialAssetKind, keyof typeof UI_COPY>;
 
-  return resolveCopy(assetKindCopyKey[assetKind], language);
-};
+const resolveAssetKindCopyKey = (assetKind: SocialAssetKind): keyof typeof UI_COPY => ASSET_KIND_COPY_KEYS[assetKind];
 
-const renderVisibleAssetKindLabel = (assetKind: SocialAssetKind, language: GuideLanguage): string => {
-  const assetKindCopyKey = {
-    "announcement-card": "socialAssetKindAnnouncement",
-    "docs-header": "socialAssetKindDocsHeader",
-    "event-invite": "socialAssetKindEventInvite",
-    "ig-post": "socialAssetKindIgPost",
-    "ig-story": "socialAssetKindIgStory",
-    "linkedin-post": "socialAssetKindLinkedin",
-    "og-card": "socialAssetKindOgCard",
-    "quote-card": "socialAssetKindQuote",
-    "x-header": "socialAssetKindXHeader",
-  } as const;
+const renderVisibleAssetKindLabel = (assetKind: SocialAssetKind, language: GuideLanguage): string =>
+  renderVisibleCopy(resolveAssetKindCopyKey(assetKind), language);
 
-  return renderVisibleCopy(assetKindCopyKey[assetKind], language);
-};
+const resolveAssetDownloadAriaLabel = (assetKind: SocialAssetKind, language: GuideLanguage): string =>
+  resolveCopy("socialToolkitLabelDownloadAssetAria", language, {
+    asset: resolveCopy(resolveAssetKindCopyKey(assetKind), language),
+  });
+
+const resolveCarouselPreviewAriaLabel = (frame: number, language: GuideLanguage): string =>
+  resolveCopy("socialToolkitLabelPreviewFrameAria", language, { frame: String(frame) });
+
+const resolveCarouselDownloadAriaLabel = (frame: number, language: GuideLanguage): string =>
+  resolveCopy("socialToolkitLabelDownloadFrameAria", language, { frame: String(frame) });
 
 /**
  * Renders a deterministic localized error fragment for invalid social requests.
@@ -110,7 +110,7 @@ export const renderSocialErrorState = (error: SocialErrorEnvelope, language: Gui
  */
 export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => {
   const language = model.language;
-  const presetCopy = resolveSocialPresetCopy(model.presetId, language);
+  const presetCopy = resolveSocialPresetCopy(model.presetId);
   const manifestHref = toSocialPackHref(
     {
       approvedAssetId: model.approvedAssetId,
@@ -122,8 +122,6 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
     ""
   );
   const packLabel = resolveCopy("socialToolkitLabelCampaignPack", language);
-  const downloadLabel = resolveCopy("socialToolkitLabelDownload", language);
-  const previewLabel = resolveCopy("socialToolkitLabelPreview", language);
   const downloadVisibleLabel = renderVisibleCopy("socialToolkitLabelDownload", language);
   const previewVisibleLabel = renderVisibleCopy("socialToolkitLabelPreview", language);
   const stepLabelKeys = [
@@ -133,10 +131,10 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
   ] as const;
   const manifestLabel = resolveCopy("socialToolkitLabelDownloadManifest", language);
   const tableCaption = resolveCopy("socialToolkitAssetsTableCaption", language);
-  const state = model.assets.length || model.carouselFrames.length ? "success" : "empty";
+  const state = resolveGuideSocialPreviewState(model);
 
   return [
-    `<div class="social-preview-grid" data-social-state="${state}">`,
+    `<div class="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]" data-social-state="${state}">`,
     `  <section class="card bg-base-200 border border-base-300 shadow-sm social-preview-shell">`,
     `    <div class="card-body social-preview-shell__body">`,
     `      <header class="social-preview-header">`,
@@ -160,7 +158,7 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
           )}</span></li>`
       )
       .join("")}</ol>`,
-    `      <div class="social-safe-zone-frame social-preview-media">`,
+    `      <div class="social-preview-media rounded-box border border-base-300 bg-base-100 p-3 sm:p-4">`,
     `        <img src="${escapeAttribute(model.primaryAssetHref)}" alt="${escapeAttribute(model.title)}" class="block h-auto w-full" loading="lazy">`,
     `      </div>`,
     `    </div>`,
@@ -189,7 +187,10 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                   asset.fileName
                 )}</p></td><td class="font-mono text-xs">${asset.width}×${asset.height}</td><td class="text-right"><a class="btn btn-xs btn-outline" href="${escapeAttribute(
                   asset.href
-                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(asset.fileName)}">${downloadVisibleLabel}</a></td></tr>`
+                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(resolveAssetDownloadAriaLabel(
+                  asset.kind,
+                  language
+                ))}">${downloadVisibleLabel}</a></td></tr>`
             )
             .join("")}</tbody>`,
           `        </table>`,
@@ -206,7 +207,10 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                   asset.width
                 }×${asset.height}</span><a class="btn btn-sm btn-outline" href="${escapeAttribute(
                   asset.href
-                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(asset.fileName)}">${downloadVisibleLabel}</a></div></article>`
+                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(resolveAssetDownloadAriaLabel(
+                  asset.kind,
+                  language
+                ))}">${downloadVisibleLabel}</a></div></article>`
             )
             .join("")}</div>`,
         ].join("\n")
@@ -226,11 +230,15 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                 language
               )}</p><p class="social-preview-carousel__ratio">${frame.width}×${frame.height}</p><div class="social-preview-carousel__actions"><a class="btn btn-xs btn-outline" href="${escapeAttribute(
                 frame.href
-              )}" target="_blank" rel="noopener" aria-label="${escapeAttribute(
-                `${previewLabel} ${frame.fileName}`
-              )}">${previewVisibleLabel}</a><a class="btn btn-xs btn-neutral" href="${escapeAttribute(
+              )}" target="_blank" rel="noopener" aria-label="${escapeAttribute(resolveCarouselPreviewAriaLabel(
+                frame.frame,
+                language
+              ))}">${previewVisibleLabel}</a><a class="btn btn-xs btn-neutral" href="${escapeAttribute(
                 frame.href
-              )}" download="${escapeAttribute(frame.fileName)}" aria-label="${escapeAttribute(frame.fileName)}">${downloadVisibleLabel}</a></div></article>`
+              )}" download="${escapeAttribute(frame.fileName)}" aria-label="${escapeAttribute(resolveCarouselDownloadAriaLabel(
+                frame.frame,
+                language
+              ))}">${downloadVisibleLabel}</a></div></article>`
           )
           .join("")}</div></div>`
       : "",
@@ -240,46 +248,77 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
   ].join("\n");
 };
 
-const updateSelectedOption = (selectMarkup: string, value: string | null): string => {
-  const normalizedMarkup = selectMarkup.replaceAll(/\sselected="selected"/g, "");
+/**
+ * Resolves the embedded preview panel state from a typed preview model.
+ */
+export const resolveGuideSocialPreviewState = (model: Pick<SocialPreviewModel, "assets" | "carouselFrames">): GuideSocialPreviewState =>
+  normalizeGuideSocialPreviewState(model.assets.length || model.carouselFrames.length ? "success" : "empty");
+
+const updateSelectedOption = (
+  option: Pick<HTMLRewriterTypes.Element, "getAttribute" | "removeAttribute" | "setAttribute">,
+  value: string | null
+): void => {
   if (!value) {
-    return normalizedMarkup;
+    return;
   }
 
-  const optionToken = `value="${escapeAttribute(value)}"`;
-  return normalizedMarkup.replace(optionToken, `${optionToken} selected="selected"`);
+  if (option.getAttribute("value") === value) {
+    option.setAttribute("selected", "selected");
+    return;
+  }
+
+  option.removeAttribute("selected");
 };
 
-const updateHiddenInputValue = (sectionMarkup: string, inputId: string, value: string): string =>
-  sectionMarkup.replace(
-    new RegExp(`(<input[^>]*id="${inputId}"[^>]*value=")([^"]*)(")`, "g"),
-    `$1${escapeAttribute(value)}$3`
-  );
+const renderGuideSocialSectionState = (
+  sectionMarkup: string,
+  language: GuideLanguage,
+  activeSection: GuideSectionId,
+  renderModel: GuideSocialPreviewRenderModel
+): string => {
+  const rewriter = new HTMLRewriter()
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialHiddenLanguage}`, {
+      element(element) {
+        element.setAttribute("value", language);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialHiddenSection}`, {
+      element(element) {
+        element.setAttribute("value", activeSection);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialPack} option`, {
+      element(element) {
+        updateSelectedOption(element, renderModel.formValues.packId);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialAssetKind} option`, {
+      element(element) {
+        updateSelectedOption(element, renderModel.formValues.assetKind);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialApprovedAsset} option`, {
+      element(element) {
+        updateSelectedOption(element, renderModel.formValues.approvedAssetId);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialTheme} option`, {
+      element(element) {
+        updateSelectedOption(element, renderModel.formValues.socialTheme);
+      },
+    })
+    .on(`#${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}`, {
+      element(element) {
+        element.setAttribute("data-social-state", renderModel.previewState);
 
-const updateSelectValue = (sectionMarkup: string, selectId: string, value: string | null): string =>
-  sectionMarkup.replace(
-    new RegExp(`(<select[^>]*id="${selectId}"[^>]*>)([\\s\\S]*?)(</select>)`, "g"),
-    (_fullMatch, openTag: string, optionsMarkup: string, closeTag: string) =>
-      `${openTag}${updateSelectedOption(optionsMarkup, value)}${closeTag}`
-  );
+        if (renderModel.previewMarkup) {
+          element.setInnerContent(`\n${renderModel.previewMarkup}\n`, { html: true });
+        }
+      },
+    });
 
-const updatePreviewPanelState = (sectionMarkup: string, previewMarkup: string | null): string => {
-  const nextState = previewMarkup?.includes('data-social-state="error"')
-    ? "error"
-    : previewMarkup?.includes('data-social-state="success"')
-      ? "success"
-      : "idle";
-
-  return sectionMarkup.replace(/(<div\s+id="social-preview-panel"[^>]*data-social-state=")([^"]+)(")/, `$1${nextState}$3`);
+  return rewriter.transform(sectionMarkup);
 };
-
-const replaceSocialPreviewPanel = (sectionMarkup: string, previewMarkup: string | null): string =>
-  previewMarkup
-    ? sectionMarkup.replace(
-        /(<div\s+id="social-preview-panel"[^>]*>)\s*<div class="social-preview-idle[^"]*"[\s\S]*?<\/div>\s*(<\/div>)/,
-        `$1\n${previewMarkup}\n          $2`
-      )
-    : sectionMarkup;
 
 /**
  * Resolves embedded guide preview state from the main guide URL.
@@ -296,6 +335,7 @@ export const resolveGuideSocialPreviewRenderModel = (
     return {
       formValues,
       previewMarkup: null,
+      previewState: "idle",
     };
   }
 
@@ -312,6 +352,7 @@ export const resolveGuideSocialPreviewRenderModel = (
     return {
       formValues,
       previewMarkup: renderSocialErrorState(resolution.error, language),
+      previewState: "error",
     };
   }
 
@@ -329,6 +370,7 @@ export const resolveGuideSocialPreviewRenderModel = (
       socialTheme: SocialTheme;
     },
     previewMarkup: renderSocialPreviewMarkup(previewModel),
+    previewState: resolveGuideSocialPreviewState(previewModel),
   };
 };
 
@@ -340,14 +382,4 @@ export const renderGuideSocialSectionMarkup = (
   language: GuideLanguage,
   activeSection: GuideSectionId,
   renderModel: GuideSocialPreviewRenderModel
-): string => {
-  let markup = updateHiddenInputValue(sectionMarkup, "social-language", language);
-  markup = updateHiddenInputValue(markup, "social-section", activeSection);
-  markup = updateSelectValue(markup, "social-pack", renderModel.formValues.packId);
-  markup = updateSelectValue(markup, "social-format", renderModel.formValues.assetKind);
-  markup = updateSelectValue(markup, "social-approved-asset", renderModel.formValues.approvedAssetId);
-  markup = updateSelectValue(markup, "social-theme", renderModel.formValues.socialTheme);
-  markup = updatePreviewPanelState(markup, renderModel.previewMarkup);
-  markup = replaceSocialPreviewPanel(markup, renderModel.previewMarkup);
-  return markup;
-};
+): string => renderGuideSocialSectionState(sectionMarkup, language, activeSection, renderModel);

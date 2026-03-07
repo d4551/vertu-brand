@@ -5,59 +5,43 @@
  */
 import PptxGenJS from "pptxgenjs";
 import * as docx from "docx";
-import { GUIDE_DOWNLOADS } from "../src/shared/config.ts";
 import { writeStructuredLog } from "../src/shared/logger.ts";
+import {
+  GUIDE_BRAND_COLOR_TOKENS,
+  GUIDE_BRAND_FONT_FAMILIES,
+  GUIDE_BRAND_IDENTITY,
+  GUIDE_BRAND_SAFE_FONT_FAMILIES,
+} from "../src/shared/brand-tokens.ts";
 import { GUIDE_BRAND_CONTACT, GUIDE_BRAND_RELEASE, GUIDE_TEMPLATE_CATALOG } from "../src/shared/template-catalog.ts";
+import { GUIDE_BRAND_FILE_PATHS } from "../src/server/runtime-config.ts";
 
 /* ─────────────────────────────────────────────
    BRAND CONSTANTS
    ───────────────────────────────────────────── */
 
 const BRAND = {
-  name: "VERTU",
+  colors: GUIDE_BRAND_COLOR_TOKENS,
   company: GUIDE_BRAND_CONTACT.company,
+  email: GUIDE_BRAND_CONTACT.email,
+  name: GUIDE_BRAND_IDENTITY.name,
   version: GUIDE_BRAND_RELEASE.version,
-  year: GUIDE_BRAND_RELEASE.year,
   website: GUIDE_BRAND_CONTACT.websiteHref,
   websiteText: GUIDE_BRAND_CONTACT.websiteLabel,
-  email: GUIDE_BRAND_CONTACT.email,
-  colors: {
-    black: "080808",
-    charcoal: "1A1816",
-    dark: "111111",
-    cream: "F2EDE5",
-    ivory: "FAF7F2",
-    white: "FFFFFF",
-    gold: "D4B978",
-    goldDeep: "C4A55E",
-    titanium: "8A847C",
-    titaniumLight: "B5AFA7",
-    accentLight: "977D40", // WCAG AA gold for light backgrounds
-    inkSoft: "58534C", // secondary body text on light
-    inkMuted: "8E8880", // tertiary text on light
-  },
-};
-
-const FONT = {
-  display: "Instrument Serif", // section titles, display headings
-  identity: "Playfair Display", // VERTU wordmark, identity blocks
-  body: "DM Sans", // body copy, descriptions
-  mono: "IBM Plex Mono", // labels, section numbers, metadata
-};
-
-const FONT_SAFE = {
-  display: "Times New Roman", // premium-font-safe fallback on Windows/macOS
-  identity: "Georgia", // premium-font-safe fallback for wordmark usage
-  body: "Arial", // safe body fallback
-  mono: "Courier New", // safe monospace fallback
+  year: GUIDE_BRAND_RELEASE.year,
 };
 
 const FONT_USE_SAFE = Bun.env.VERTU_TEMPLATE_SAFE_FONTS === "1";
 const FONT_FACE = Object.fromEntries(
-  Object.entries(FONT).map(([k, primary]) => [k, FONT_USE_SAFE ? FONT_SAFE[k] : primary])
+  Object.entries(GUIDE_BRAND_FONT_FAMILIES).map(([k, primary]) => [
+    k,
+    FONT_USE_SAFE ? GUIDE_BRAND_SAFE_FONT_FAMILIES[k] : primary,
+  ])
 );
 const FONT_DOCX = Object.fromEntries(
-  Object.entries(FONT).map(([k, primary]) => [k, FONT_USE_SAFE ? FONT_SAFE[k] : primary])
+  Object.entries(GUIDE_BRAND_FONT_FAMILIES).map(([k, primary]) => [
+    k,
+    FONT_USE_SAFE ? GUIDE_BRAND_SAFE_FONT_FAMILIES[k] : primary,
+  ])
 );
 
 const PPTX = {
@@ -90,15 +74,21 @@ const PRESENTATION_TEMPLATE = GUIDE_TEMPLATE_CATALOG.presentation;
 const LETTERHEAD_TEMPLATE = GUIDE_TEMPLATE_CATALOG.letterhead;
 
 /* ── Logo images (base64-encoded for embedding) ── */
+/**
+ * Reads a local image file and returns a PNG data URL for PPTX embedding.
+ *
+ * @param {string} path
+ * @returns {Promise<string>}
+ */
 const toBase64 = async (path) => {
   const buf = await Bun.file(path).arrayBuffer();
   return `data:image/png;base64,${Buffer.from(buf).toString("base64")}`;
 };
 
 const LOGO = {
-  white: await toBase64("VERTU-Logo-White.png"),
-  black: await toBase64("VERTU-Logo-Black.png"),
-  gold: await toBase64("VERTU-Logo-Gold.png"),
+  white: await toBase64(GUIDE_BRAND_FILE_PATHS.logoWhite),
+  black: await toBase64(GUIDE_BRAND_FILE_PATHS.logoBlack),
+  gold: await toBase64(GUIDE_BRAND_FILE_PATHS.logoGold),
 };
 
 // Logo is 160×53 px → aspect ratio ~3.02:1
@@ -294,7 +284,7 @@ const theme = (tone) =>
         border: "E8E3DC", // subtle border
         glass: "EFE9DE",
         card: "F6F1E7",
-        evidence: "B5AFA7",
+        evidence: BRAND.colors.titaniumLight,
       }
     : {
         bg: BRAND.colors.black,
@@ -730,7 +720,7 @@ function renderMenu(slide, s, t, pptx, { L, BODY_W, menuTargets }) {
   const cards = s.cards || [];
   const cols = 3;
   const cardW = (BODY_W - PPTX.style.cardGap * (cols - 1)) / cols;
-  const cardH = 1.28;
+  const cardH = 1.0;
   const yBase = 3.18;
 
   cards.forEach((card, i) => {
@@ -740,11 +730,11 @@ function renderMenu(slide, s, t, pptx, { L, BODY_W, menuTargets }) {
     const y = yBase + row * (cardH + PPTX.style.cardGap);
     addPanel(pptx, slide, t, x, y, cardW, cardH, { fill: t.card, line: t.border });
     slide.addText(card[0], {
-      ...(menuTargets && menuTargets[i] ? { hyperlink: { slide: menuTargets[i], tooltip: `Jump to ${card[0]}` } } : {}),
+      ...(menuTargets?.[i] ? { hyperlink: { slide: menuTargets[i], tooltip: `Jump to ${card[0]}` } } : {}),
       x: x + PPTX.style.cardPad,
-      y: y + 0.15,
+      y: y + 0.12,
       w: cardW - PPTX.style.cardPad * 2,
-      h: 0.33,
+      h: 0.26,
       fontFace: FONT_FACE.mono,
       color: t.accent,
       fontSize: 10,
@@ -753,9 +743,9 @@ function renderMenu(slide, s, t, pptx, { L, BODY_W, menuTargets }) {
     });
     slide.addText(card[1], {
       x: x + PPTX.style.cardPad,
-      y: y + 0.51,
+      y: y + 0.40,
       w: cardW - PPTX.style.cardPad * 2,
-      h: cardH - 0.7,
+      h: cardH - 0.52,
       fontFace: FONT_FACE.body,
       color: t.fg,
       fontSize: 12.5,
@@ -868,7 +858,7 @@ function renderBentoContent(slide, s, t, pptx, { L, BODY_W }) {
       slide,
       t,
       pptx,
-      { x: L, y: 6.28, w: BODY_W, h: 1.2 },
+      { x: L, y: 6.0, w: BODY_W, h: 0.72 },
       "[ Visual cadence ]",
       "Insert optional montage strip, one to three supporting assets"
     );
@@ -927,22 +917,23 @@ function renderInsightContent(slide, s, t, pptx, { L, BODY_W }) {
   }
 
   const mediaW = BODY_W - panelW - 0.34;
+  const mediaX = L + panelW + 0.34;
   addMediaPlaceholder(
     slide,
     t,
     pptx,
-    { x: L + panelW + 0.34, y: 3.0, w: mediaW, h: 4.2 },
+    { x: mediaX, y: 3.0, w: mediaW, h: 3.0 },
     "[ Chart placeholder ]",
     "Insert one chart or one comparative visual"
   );
   addEvidenceBlock(slide, s, t, pptx, {
-    L: L + panelW + 0.34,
+    L: mediaX,
     width: mediaW,
-    y: 7.28,
+    y: 6.12,
   });
 }
 
-function renderClosing(slide, s, t, pptx, { L, BODY_W, FULL_W }) {
+function renderClosing(slide, s, t, pptx, { FULL_W }) {
   slide.addShape(pptx.ShapeType.line, {
     x: 0,
     y: 7.48,
@@ -1070,7 +1061,7 @@ const {
 } = docx;
 
 // Logo buffer for DOCX embedding
-const logoBlackBuf = await Bun.file("VERTU-Logo-Black.png").arrayBuffer();
+const logoBlackBuf = await Bun.file(GUIDE_BRAND_FILE_PATHS.logoBlack).arrayBuffer();
 
 const C = BRAND.colors; // shorthand
 
@@ -1410,11 +1401,11 @@ function buildDocx() {
 
 const pptx = buildPptx();
 const pptxBuf = await pptx.write({ outputType: "uint8array" });
-await Bun.write(GUIDE_DOWNLOADS["dl-pptx"].fileName, pptxBuf);
+await Bun.write(GUIDE_BRAND_FILE_PATHS.presentationTemplate, pptxBuf);
 
 const doc = buildDocx();
 const docxBuf = new Uint8Array(await Packer.toBuffer(doc));
-await Bun.write(GUIDE_DOWNLOADS["dl-docx"].fileName, docxBuf);
+await Bun.write(GUIDE_BRAND_FILE_PATHS.letterheadTemplate, docxBuf);
 
 writeStructuredLog({
   component: "templates",

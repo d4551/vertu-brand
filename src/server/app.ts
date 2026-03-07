@@ -2,9 +2,18 @@ import { staticPlugin } from "@elysiajs/static";
 import { Elysia } from "elysia";
 
 import { GUIDE_PATHS } from "./runtime-config";
-import { GUIDE_DOWNLOADS, GUIDE_ROUTES, GUIDE_SERVER, HTMX_REQUEST_HEADERS, HTMX_VARY_HEADER } from "../shared/config";
+import { guideObservabilityPlugin, resolveGuideRequestId } from "./observability-plugin";
+import {
+  GUIDE_DOWNLOADS,
+  GUIDE_REQUEST_ID_HEADER,
+  GUIDE_ROUTES,
+  GUIDE_SERVER,
+  HTMX_REQUEST_HEADERS,
+  HTMX_VARY_HEADER,
+} from "../shared/config";
 import type { GuideDownloadId } from "../shared/config";
 import { writeStructuredLog } from "../shared/logger";
+import { logGuideRuntimeSettingWarnings } from "../shared/runtime-settings";
 import { GUIDE_DOM_IDS, GUIDE_SELECTORS } from "../shared/shell-contract";
 import { resolveGuideViewState } from "../shared/view-state";
 import { renderDocument, renderGuidePage, renderGuideShell } from "./render/layout";
@@ -44,8 +53,10 @@ const resolveDownloadPath = (downloadId: GuideDownloadId): string =>
  * Main Elysia application for the SSR guide shell and static assets.
  */
 export const app = new Elysia({ nativeStaticResponse: true })
+  .use(guideObservabilityPlugin)
   .get(GUIDE_ROUTES.guide, ({ request, set }) => {
     const requestUrl = new URL(request.url);
+    const guideRequestId = resolveGuideRequestId(request);
     const viewState = resolveGuideViewState(new URL(request.url));
     const isHtmxRequest = request.headers.get(HTMX_REQUEST_HEADERS.request) === "true";
     const isHistoryRestoreRequest = request.headers.get(HTMX_REQUEST_HEADERS.historyRestoreRequest) === "true";
@@ -57,6 +68,7 @@ export const app = new Elysia({ nativeStaticResponse: true })
 
     set.headers["Cache-Control"] = "no-store";
     set.headers["Content-Type"] = "text/html; charset=utf-8";
+    set.headers[GUIDE_REQUEST_ID_HEADER] = guideRequestId;
     set.headers.Vary = HTMX_VARY_HEADER;
 
     if (isHtmxRequest && !isHistoryRestoreRequest) {
@@ -73,19 +85,17 @@ export const app = new Elysia({ nativeStaticResponse: true })
     const downloadIds = Object.keys(GUIDE_DOWNLOADS) as GuideDownloadId[];
     for (const id of downloadIds) {
       const href = GUIDE_DOWNLOADS[id].href;
-      const entry = GUIDE_DOWNLOADS[id];
       group
-        .get(href, async () => {
-          const body = await Bun.file(resolveDownloadPath(id)).arrayBuffer();
-          return new Response(body, {
-            headers: {
-              "Content-Disposition": `attachment; filename="${entry.fileName}"`,
-              "Content-Type": entry.contentType,
-            },
-          });
-        })
-        .head(href, ({ set }) => {
+        .get(href, ({ request, set }) => {
+          const guideRequestId = resolveGuideRequestId(request);
           applyDownloadHeaders(set, id);
+          set.headers[GUIDE_REQUEST_ID_HEADER] = guideRequestId;
+          return Bun.file(resolveDownloadPath(id));
+        })
+        .head(href, ({ request, set }) => {
+          const guideRequestId = resolveGuideRequestId(request);
+          applyDownloadHeaders(set, id);
+          set.headers[GUIDE_REQUEST_ID_HEADER] = guideRequestId;
           return "";
         });
     }
@@ -98,11 +108,18 @@ export const app = new Elysia({ nativeStaticResponse: true })
  * Starts the guide server.
  */
 export const startGuideServer = (port: number): void => {
-  app.listen(port);
+  logGuideRuntimeSettingWarnings("server");
+  app.listen({
+    hostname: GUIDE_SERVER.host,
+    port,
+  });
   writeStructuredLog({
     component: "server",
     level: "INFO",
     message: "Guide server listening",
-    context: { port },
+    context: {
+      host: GUIDE_SERVER.host,
+      port,
+    },
   });
 };

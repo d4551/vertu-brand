@@ -7,14 +7,20 @@ import { initializeLogoGenerator as initializeLogoGeneratorEnhancement } from ".
 import { initializeSocialToolkit as initializeSocialToolkitEnhancement } from "./social-toolkit";
 import { GUIDE_DOWNLOADS, type GuideDownloadId } from "../shared/config";
 import { resolveScrollProgressPercent, resolveTypePlaygroundState } from "../shared/guide-interactions";
+import {
+  HTMX_BROWSER_EVENTS,
+  resolveHtmxEventTarget,
+  type HtmxAfterSwapEventDetail,
+  type HtmxRequestLifecycleEventDetail,
+} from "../shared/htmx-event-contract";
 import { resolveGuideSocialQueryValues, toSocialGuideHref } from "../shared/social-toolkit";
 import { GUIDE_DOM_IDS, GUIDE_SELECTORS } from "../shared/shell-contract";
 import {
   isGuideSectionId,
-  isGuideLanguage,
-  normalizeGuideTheme,
   nextGuideTheme,
   nextGuideLanguage,
+  resolveGuideDocumentLanguageTag,
+  resolveGuideState,
   type GuideSectionId,
 } from "../shared/view-state";
 
@@ -28,6 +34,13 @@ let pendingViewportSyncFrame = 0;
 let lastAnchoredViewKey = "";
 
 const isGuideDownloadId = (value: string): value is GuideDownloadId => value in GUIDE_DOWNLOADS;
+
+const resolveGuideRootState = () =>
+  resolveGuideState({
+    language: resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language,
+    section: resolveGuidePage()?.dataset.activeSection ?? resolveShell()?.dataset.activeSection,
+    theme: resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme,
+  });
 
 const initializeGuide = (): void => {
   syncDocumentState();
@@ -71,12 +84,12 @@ const bindGlobalHandlers = (): void => {
 
   const body = document.body;
   if (body) {
-    body.addEventListener("htmx:beforeRequest", handleBeforeRequest);
-    body.addEventListener("htmx:afterRequest", handleAfterRequest);
-    body.addEventListener("htmx:afterSwap", handleAfterSwap);
-    body.addEventListener("htmx:historyRestore", handleHistoryRestore);
-    body.addEventListener("htmx:responseError", handleAfterRequest);
-    body.addEventListener("htmx:sendError", handleAfterRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.beforeRequest, handleBeforeRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.afterRequest, handleAfterRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.afterSwap, handleAfterSwap);
+    body.addEventListener(HTMX_BROWSER_EVENTS.historyRestore, handleHistoryRestore);
+    body.addEventListener(HTMX_BROWSER_EVENTS.responseError, handleAfterRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.sendError, handleAfterRequest);
   }
 
   if (document.readyState === "loading") {
@@ -201,29 +214,29 @@ const handleHistoryChange = (): void => {
   syncActiveNavigation();
 };
 
-const handleBeforeRequest = (event: Event): void => {
+const handleBeforeRequest = (event: CustomEvent<HtmxRequestLifecycleEventDetail>): void => {
   if (isGuideTarget(event)) {
     setGuideBusyState(true);
   }
 };
 
-const handleAfterRequest = (event: Event): void => {
+const handleAfterRequest = (event: CustomEvent<HtmxRequestLifecycleEventDetail>): void => {
   if (isGuideTarget(event)) {
     setGuideBusyState(false);
   }
 };
 
-const handleAfterSwap = (event: Event): void => {
+const handleAfterSwap = (event: CustomEvent<HtmxAfterSwapEventDetail>): void => {
   setGuideBusyState(false);
   initializeGuide();
 
-  const target = resolveHtmxTarget(event);
+  const target = resolveHtmxEventTarget(event);
   if (target instanceof HTMLElement && (target.id === GUIDE_DOM_IDS.shell || target.id === GUIDE_DOM_IDS.page)) {
     focusMainRegion();
   }
 };
 
-const handleHistoryRestore = (): void => {
+const handleHistoryRestore = (_event: CustomEvent): void => {
   setGuideBusyState(false);
   initializeGuide();
   focusMainRegion();
@@ -237,16 +250,19 @@ const syncDocumentState = (): void => {
     return;
   }
 
-  const language = stateRoot.dataset.language || "bi";
-  const theme = stateRoot.dataset.theme || "dark";
+  const guideState = resolveGuideState({
+    language: stateRoot.dataset.language,
+    section: stateRoot.dataset.activeSection,
+    theme: stateRoot.dataset.theme,
+  });
 
-  document.documentElement.setAttribute("data-lang", language);
+  document.documentElement.setAttribute("data-lang", guideState.language);
   const effectiveTheme =
-    theme === "system"
+    guideState.theme === "system"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      : theme;
+      : guideState.theme;
   document.documentElement.setAttribute("data-theme", effectiveTheme);
-  document.documentElement.lang = language === "zh" ? "zh" : language === "bi" ? "mul" : "en";
+  document.documentElement.lang = resolveGuideDocumentLanguageTag(guideState.language);
 };
 
 const syncDrawerState = (): void => {
@@ -484,9 +500,8 @@ const scrollActiveNavigationIntoView = (): void => {
 
 const alignViewToRequestedSection = (): void => {
   const requestedSectionId = resolveRequestedSectionId();
-  const page = resolveGuidePage();
-  const shell = resolveShell();
-  const viewKey = `${page?.dataset.language ?? shell?.dataset.language ?? "bi"}:${page?.dataset.theme ?? shell?.dataset.theme ?? "dark"}:${requestedSectionId}`;
+  const guideState = resolveGuideRootState();
+  const viewKey = `${guideState.language}:${guideState.theme}:${requestedSectionId}`;
 
   if (lastAnchoredViewKey === viewKey) {
     return;
@@ -519,8 +534,7 @@ const resolveRequestedSectionId = (): GuideSectionId => {
     return nextSectionId;
   }
 
-  const stateSection = resolveGuidePage()?.dataset.activeSection ?? resolveShell()?.dataset.activeSection ?? "s0";
-  return isGuideSectionId(stateSection) ? stateSection : "s0";
+  return resolveGuideRootState().section;
 };
 
 const resolveGuideSectionElements = (): HTMLElement[] =>
@@ -586,22 +600,21 @@ const syncActiveSectionState = (sectionId: GuideSectionId, historyMode: "push" |
 };
 
 const syncSidebarControlLinks = (sectionId: GuideSectionId): void => {
-  const currentLanguage = resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language ?? "bi";
-  const currentTheme = resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme ?? "dark";
   const url = new URL(window.location.href);
   const socialQuery = resolveGuideSocialQueryValues(url.searchParams);
-  const language = isGuideLanguage(currentLanguage) ? currentLanguage : "bi";
-  const theme = normalizeGuideTheme(currentTheme);
+  const guideState = resolveGuideRootState();
 
   const themeCycleBtn = document.querySelector<HTMLAnchorElement>(".guide-theme-cycle[data-guide-theme]");
   if (themeCycleBtn) {
     const currentTheme = themeCycleBtn.dataset.guideTheme;
-    const nextTheme = currentTheme ? nextGuideTheme(normalizeGuideTheme(currentTheme)) : "light";
+    const nextTheme = currentTheme
+      ? nextGuideTheme(resolveGuideState({ theme: currentTheme }).theme)
+      : "light";
     const href = toSocialGuideHref({
       approvedAssetId: socialQuery.approvedAssetId,
       assetKind: socialQuery.assetKind,
       guideTheme: nextTheme,
-      language,
+      language: guideState.language,
       packId: socialQuery.packId,
       section: sectionId,
       socialTheme: socialQuery.socialTheme,
@@ -613,11 +626,11 @@ const syncSidebarControlLinks = (sectionId: GuideSectionId): void => {
   const langCycleBtn = document.querySelector<HTMLAnchorElement>(".guide-lang-cycle[data-guide-language]");
   if (langCycleBtn) {
     const currentLang = langCycleBtn.dataset.guideLanguage;
-    const nextLang = currentLang && isGuideLanguage(currentLang) ? nextGuideLanguage(currentLang) : "zh";
+    const nextLang = currentLang ? nextGuideLanguage(resolveGuideState({ language: currentLang }).language) : "zh";
     const href = toSocialGuideHref({
       approvedAssetId: socialQuery.approvedAssetId,
       assetKind: socialQuery.assetKind,
-      guideTheme: theme,
+      guideTheme: guideState.theme,
       language: nextLang,
       packId: socialQuery.packId,
       section: sectionId,
@@ -629,17 +642,14 @@ const syncSidebarControlLinks = (sectionId: GuideSectionId): void => {
 };
 
 const syncSectionUrl = (sectionId: GuideSectionId, historyMode: "push" | "replace"): void => {
-  const currentLanguage = resolveGuidePage()?.dataset.language ?? resolveShell()?.dataset.language ?? "bi";
-  const currentTheme = resolveGuidePage()?.dataset.theme ?? resolveShell()?.dataset.theme ?? "dark";
   const currentUrl = new URL(window.location.href);
   const socialQuery = resolveGuideSocialQueryValues(currentUrl.searchParams);
-  const language = isGuideLanguage(currentLanguage) ? currentLanguage : "bi";
-  const theme = normalizeGuideTheme(currentTheme);
+  const guideState = resolveGuideRootState();
   const nextHref = toSocialGuideHref({
     approvedAssetId: socialQuery.approvedAssetId,
     assetKind: socialQuery.assetKind,
-    guideTheme: theme,
-    language,
+    guideTheme: guideState.theme,
+    language: guideState.language,
     packId: socialQuery.packId,
     section: sectionId,
     socialTheme: socialQuery.socialTheme,
@@ -667,22 +677,8 @@ const setGuideBusyState = (busy: boolean): void => {
   });
 };
 
-const resolveHtmxTarget = (event: Event): HTMLElement | null => {
-  if (!(event instanceof CustomEvent)) {
-    return null;
-  }
-
-  const detail = Reflect.get(event, "detail");
-  if (!detail || typeof detail !== "object") {
-    return null;
-  }
-
-  const target = Reflect.get(detail, "target");
-  return target instanceof HTMLElement ? target : null;
-};
-
-const isGuideTarget = (event: Event): boolean => {
-  const targetId = resolveHtmxTarget(event)?.id;
+const isGuideTarget = (event: CustomEvent<HtmxRequestLifecycleEventDetail>): boolean => {
+  const targetId = resolveHtmxEventTarget(event)?.id;
   return targetId === GUIDE_DOM_IDS.page || targetId === GUIDE_DOM_IDS.shell;
 };
 

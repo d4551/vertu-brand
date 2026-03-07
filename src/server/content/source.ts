@@ -1,4 +1,4 @@
-import { SECTION_REGISTRY } from "../../../.generated/content/sections.generated.ts";
+import { SECTION_REGISTRY } from "./generated";
 import type { GuideLanguage, GuideSectionId } from "../../shared/view-state";
 
 /**

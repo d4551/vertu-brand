@@ -1,12 +1,13 @@
 import type { LocalizedCopy } from "./i18n";
-import { GUIDE_ROUTES, GUIDE_SERVER } from "./config";
+import { GUIDE_ROUTES, GUIDE_SERVER, toGuideImageAssetHref } from "./config";
 import {
   type GuideLanguage,
   type GuideSectionId,
   type GuideTheme,
+  type GUIDE_THEMES,
   GUIDE_SECTION_IDS,
-  GUIDE_THEMES,
   isGuideSectionId,
+  resolveGuideLocale,
   toGuideHref,
 } from "./view-state";
 
@@ -136,6 +137,16 @@ export interface SocialGuideHrefInput extends SocialGuideQueryValues {
 }
 
 /**
+ * Canonical preview-panel states used by the embedded social toolkit.
+ */
+export const GUIDE_SOCIAL_PREVIEW_STATES = ["idle", "loading", "success", "empty", "error"] as const;
+
+/**
+ * Canonical preview-panel states used by the embedded social toolkit.
+ */
+export type GuideSocialPreviewState = (typeof GUIDE_SOCIAL_PREVIEW_STATES)[number];
+
+/**
  * Typed error envelope for invalid social toolkit requests.
  */
 export interface SocialErrorEnvelope {
@@ -150,6 +161,22 @@ export interface SocialErrorEnvelope {
     | "invalid_theme";
   value: string;
 }
+
+const GUIDE_SOCIAL_PREVIEW_STATE_SET = new Set<string>(GUIDE_SOCIAL_PREVIEW_STATES);
+
+/**
+ * Type guard for supported embedded social preview panel states.
+ */
+export const isGuideSocialPreviewState = (value: string): value is GuideSocialPreviewState =>
+  GUIDE_SOCIAL_PREVIEW_STATE_SET.has(value);
+
+/**
+ * Normalizes arbitrary preview-state input into the canonical social preview state.
+ */
+export const normalizeGuideSocialPreviewState = (value: string | null | undefined): GuideSocialPreviewState => {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return isGuideSocialPreviewState(normalized) ? normalized : "idle";
+};
 
 /**
  * Dimensions and channel metadata for a social asset.
@@ -175,6 +202,9 @@ export interface SocialApprovedAssetDefinition {
   alt: LocalizedCopy;
   fileName: string;
   id: ApprovedAssetId;
+  label: LocalizedCopy;
+  meta: LocalizedCopy;
+  pickerLabel: LocalizedCopy;
   path: string;
 }
 
@@ -353,19 +383,28 @@ export const SOCIAL_APPROVED_ASSETS: Record<ApprovedAssetId, SocialApprovedAsset
     alt: { en: "Agent Q collector's edition", zh: "Agent Q 收藏家版本" },
     fileName: "agent-q-alligator-collectors-edition.webp",
     id: "agent-q",
-    path: "/assets/images/agent-q-alligator-collectors-edition.webp",
+    label: { en: "Agent Q Collector Edition", zh: "Agent Q 收藏家版" },
+    meta: { en: "Launch-approved hero asset", zh: "限量发布素材" },
+    pickerLabel: { en: "Approved Asset — Agent Q", zh: "批准素材 — Agent Q" },
+    path: toGuideImageAssetHref("agent-q-alligator-collectors-edition.webp"),
   },
   "quantum-flip": {
     alt: { en: "Quantum Flip gilded lacquer finish", zh: "Quantum Flip 镀金漆面细节" },
     fileName: "quantum-flip-baqua-gilded-lacquer-gold-v.webp",
     id: "quantum-flip",
-    path: "/assets/images/quantum-flip-baqua-gilded-lacquer-gold-v.webp",
+    label: { en: "Quantum Flip Gilded Detail", zh: "Quantum Flip 镀金细节" },
+    meta: { en: "Event-approved luxury detail", zh: "私享活动视觉锚点" },
+    pickerLabel: { en: "Approved Asset — Quantum Flip", zh: "批准素材 — Quantum Flip" },
+    path: toGuideImageAssetHref("quantum-flip-baqua-gilded-lacquer-gold-v.webp"),
   },
   "signature-black-red": {
     alt: { en: "Signature black and red luxury handset", zh: "黑红配色高端手机细节" },
     fileName: "black-red.webp",
     id: "signature-black-red",
-    path: "/assets/images/black-red.webp",
+    label: { en: "Signature Black/Red Story", zh: "Signature 黑红系列" },
+    meta: { en: "Evergreen brand narrative anchor", zh: "品牌常青视觉锚点" },
+    pickerLabel: { en: "Approved Asset — Signature Black/Red", zh: "批准素材 — Signature 黑红系列" },
+    path: toGuideImageAssetHref("black-red.webp"),
   },
 } as const;
 
@@ -753,9 +792,8 @@ export const resolveSocialSectionLabel = (section: GuideSectionId, language: Gui
 /**
  * Resolves preset-localized copy.
  */
-export const resolveSocialPresetCopy = (presetId: SocialPresetId, language: GuideLanguage): SocialPresetCopy => {
+export const resolveSocialPresetCopy = (presetId: SocialPresetId): SocialPresetCopy => {
   const preset = SOCIAL_PRESET_REGISTRY[presetId];
-  const languageKey = language === "zh" ? "zh" : "en";
 
   return {
     description: {
@@ -789,20 +827,20 @@ export const resolveSocialPresetCopy = (presetId: SocialPresetId, language: Guid
  * Builds the download filename for a rendered social asset.
  */
 export const buildSocialAssetFileName = (request: SocialRenderRequest): string =>
-  [
+  `${[
     "VERTU",
     request.packId,
     request.assetKind,
     request.language,
     request.theme,
     request.section,
-  ].join("-") + ".png";
+  ].join("-")}.png`;
 
 /**
  * Builds the download filename for a rendered carousel frame.
  */
 export const buildSocialCarouselFileName = (request: SocialRenderRequest, frame: number): string =>
-  [
+  `${[
     "VERTU",
     request.packId,
     "carousel",
@@ -810,7 +848,7 @@ export const buildSocialCarouselFileName = (request: SocialRenderRequest, frame:
     request.language,
     request.theme,
     request.section,
-  ].join("-") + ".png";
+  ].join("-")}.png`;
 
 /**
  * Builds the static output path fragment for a rendered social asset.
@@ -829,8 +867,8 @@ export const buildSocialStaticCarouselPath = (request: SocialRenderRequest, fram
  */
 export const resolveSocialPackManifest = (request: SocialRenderRequest, origin = ""): SocialPackManifest => {
   const preset = SOCIAL_PRESET_REGISTRY[request.packId];
-  const copy = resolveSocialPresetCopy(request.presetId, request.language);
-  const languageKey = request.language === "zh" ? "zh" : "en";
+  const copy = resolveSocialPresetCopy(request.presetId);
+  const languageKey = resolveGuideLocale(request.language);
 
   return {
     approvedAssetId: request.approvedAssetId,

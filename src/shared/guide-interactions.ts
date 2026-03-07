@@ -8,8 +8,8 @@ const DEFAULT_TYPE_PREVIEW_CLASS_NAME = TYPE_PREVIEW_CLASS_NAMES["'Playfair Disp
 
 const clamp = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
-const hasRecordKey = <Key extends string>(record: Record<Key, unknown>, value: string): value is Key =>
-  Object.prototype.hasOwnProperty.call(record, value);
+const hasRecordKey = <Key extends string>(record: Record<Key, string>, value: string): value is Key =>
+  Object.hasOwn(record, value);
 
 const normalizeTrackingLabel = (trackingValue: number): string => `${Number(trackingValue.toFixed(2))}em`;
 
