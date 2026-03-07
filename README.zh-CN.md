@@ -178,7 +178,7 @@ graph TD
 | `src/server/index.ts` | `3000`   | 开发服务器，由 `bun run dev` 启动    |
 | `src/server/serve.ts` | `3090`   | 类型化静态预览入口，用于构建资源验证 |
 
-两个入口共用 `runtime-config.ts` 中的端口解析契约、`src/server/boot.ts` 中的启动契约，并共享 `src/shared/runtime-settings.ts` 中的默认值。它们都遵循 `GUIDE_PORT`；`index.ts` 还读取 `PORT` 并支持 `-l`/`--listen` CLI 参数。
+两个入口共用 `runtime-config.ts` 中的端口解析契约、`src/server/boot.ts` 中的启动契约，并共享 `src/shared/runtime-settings.ts` 中的默认值。它们都遵循 `GUIDE_PORT`，也都会回退到容器平台常见的 `PORT`，并支持 `-l`/`--listen` CLI 参数。
 
 ## 仓库结构
 
@@ -273,7 +273,7 @@ bun run format:check   # 验证格式但不写入
 | `GUIDE_DEFAULT_PORT`        | `3000` | `GUIDE_PORT` / CLI 覆盖前的默认开发端口                          |
 | `GUIDE_SERVE_PORT`          | `3090` | `GUIDE_PORT` 覆盖前的默认静态预览端口                            |
 | `GUIDE_PORT`                | —    | 覆盖任一服务器的默认端口                                             |
-| `PORT`                      | —    | 可选的 Railway / 容器端口；部署时更推荐将其映射到 `GUIDE_PORT`           |
+| `PORT`                      | —    | 两个服务器入口都会遵循的 Railway / 容器回退端口                           |
 | `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | 请求/响应关联头名称                                           |
 | `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | 编译 CSS/JS 与复制公开资源的 max-age                  |
 | `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | 编译 CSS/JS 与复制公开资源的 SWR 窗口 |

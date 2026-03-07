@@ -191,8 +191,9 @@ describe("guide shell rendering", () => {
         args: ["bun", "src/server/serve.ts"],
         defaultPort: 3090,
         env: { GUIDE_PORT: "", PORT: "4999" },
+        includeLegacyPort: true,
       })
-    ).toBe(3090);
+    ).toBe(4999);
   });
 
   test("centralizes Bun command contracts for build, stylesheet compilation, and server entrypoints", () => {
@@ -224,7 +225,7 @@ describe("guide shell rendering", () => {
     expect(GUIDE_SERVER_BOOT_OPTIONS.dev.defaultPort).toBe(GUIDE_SERVER.defaultPort);
     expect(GUIDE_SERVER_BOOT_OPTIONS.dev.includeLegacyPort).toBe(true);
     expect(GUIDE_SERVER_BOOT_OPTIONS.serve.defaultPort).toBe(GUIDE_SERVER.servePort);
-    expect(GUIDE_SERVER_BOOT_OPTIONS.serve.includeLegacyPort).toBe(false);
+    expect(GUIDE_SERVER_BOOT_OPTIONS.serve.includeLegacyPort).toBe(true);
   });
 
   test("routes local dev rebuilds through the shared app-vs-full build contract", () => {

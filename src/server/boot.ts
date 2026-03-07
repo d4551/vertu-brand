@@ -12,7 +12,7 @@ export const GUIDE_SERVER_BOOT_OPTIONS = {
   },
   serve: {
     defaultPort: GUIDE_SERVER.servePort,
-    includeLegacyPort: false,
+    includeLegacyPort: true,
   },
 } as const satisfies Record<
   GuideServerCommandTarget,

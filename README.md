@@ -178,7 +178,7 @@ graph TD
 | `src/server/index.ts` | `3000`       | Development server started by `bun run dev`                |
 | `src/server/serve.ts` | `3090`       | Typed static-preview entrypoint for built-asset validation |
 
-Both entrypoints use one shared port-resolution contract from `runtime-config.ts`, one shared boot contract from `src/server/boot.ts`, and shared defaults from `src/shared/runtime-settings.ts`. They respect `GUIDE_PORT`; `index.ts` also reads `PORT` and supports `-l`/`--listen` CLI flags.
+Both entrypoints use one shared port-resolution contract from `runtime-config.ts`, one shared boot contract from `src/server/boot.ts`, and shared defaults from `src/shared/runtime-settings.ts`. They respect `GUIDE_PORT`, also fall back to `PORT` for container platforms like Railway, and support `-l`/`--listen` CLI flags.
 
 ## Repository layout
 
@@ -273,7 +273,7 @@ bun run format:check   # Verify formatting without writing changes
 | `GUIDE_DEFAULT_PORT`        | `3000`  | Default development server port before `GUIDE_PORT` / CLI overrides            |
 | `GUIDE_SERVE_PORT`          | `3090`  | Default static-preview port before `GUIDE_PORT` overrides                      |
 | `GUIDE_PORT`                | —       | Overrides the default port for either server                                   |
-| `PORT`                      | —       | Optional Railway/container port; prefer mapping it to `GUIDE_PORT` at deploy time |
+| `PORT`                      | —       | Railway/container fallback port honored by both server entrypoints                  |
 | `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | Response/request correlation header name                                 |
 | `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | Max-age for compiled CSS/JS and copied public assets                   |
 | `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | SWR window for compiled CSS/JS and copied public assets |
