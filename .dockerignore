@@ -1,0 +1,11 @@
+.git
+.generated
+.idea
+.vscode
+coverage
+node_modules
+tmp
+*.log
+.DS_Store
+.env
+.env.*

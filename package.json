@@ -21,7 +21,11 @@
     "typescript": "5.9.3"
   },
   "description": "SSR-first VERTU brand guide with Bun, Elysia, HTMX, Tailwind CSS 4, and daisyUI 5",
+  "engines": {
+    "bun": "1.3.10"
+  },
   "license": "UNLICENSED",
+  "packageManager": "bun@1.3.10",
   "private": true,
   "scripts": {
     "build": "bun run build:templates && bun run build:app",
@@ -37,6 +41,7 @@
     "preserve": "bun run build",
     "pretest": "bun run lint && bun run build",
     "pretypecheck": "bun run lint && bun run build",
+    "start": "bun ./src/server/serve.ts",
     "serve": "bun ./src/server/serve.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"

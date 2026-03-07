@@ -258,6 +258,13 @@ bun run format         # Format source files with Prettier
 bun run format:check   # Verify formatting without writing changes
 ```
 
+## Railway / Railpack
+
+- `railpack.json` owns the Bun install, build, and start contract for container builds.
+- `railway.json` pins Railway to the `RAILPACK` builder for services created before Railpack became the default builder.
+- Railpack builds with `bun run build` and starts with `bun run start`, which now targets `src/server/serve.ts` for the production SSR boot path.
+- The deploy config forces `GUIDE_HOST=0.0.0.0` because the local default `localhost` is not externally reachable inside Railway containers.
+
 ## Environment variables
 
 | Variable                    | Default | Description                                                                    |
@@ -266,7 +273,7 @@ bun run format:check   # Verify formatting without writing changes
 | `GUIDE_DEFAULT_PORT`        | `3000`  | Default development server port before `GUIDE_PORT` / CLI overrides            |
 | `GUIDE_SERVE_PORT`          | `3090`  | Default static-preview port before `GUIDE_PORT` overrides                      |
 | `GUIDE_PORT`                | —       | Overrides the default port for either server                                   |
-| `PORT`                      | —       | Fallback port read by `index.ts` only                                          |
+| `PORT`                      | —       | Optional Railway/container port; prefer mapping it to `GUIDE_PORT` at deploy time |
 | `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | Response/request correlation header name                                 |
 | `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | Max-age for compiled CSS/JS and copied public assets                   |
 | `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | SWR window for compiled CSS/JS and copied public assets |

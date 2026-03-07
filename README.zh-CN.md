@@ -258,6 +258,13 @@ bun run format         # 使用 Prettier 格式化源文件
 bun run format:check   # 验证格式但不写入
 ```
 
+## Railway / Railpack
+
+- `railpack.json` 负责容器构建时的 Bun 安装、构建与启动契约。
+- `railway.json` 将 Railway 构建器固定为 `RAILPACK`，兼容 Railpack 成为默认构建器之前创建的服务。
+- Railpack 使用 `bun run build` 构建，并通过 `bun run start` 启动；该脚本现在指向生产用的 `src/server/serve.ts` SSR 启动路径。
+- 部署配置强制 `GUIDE_HOST=0.0.0.0`，因为仓库里的本地默认值 `localhost` 在 Railway 容器内无法对外监听。
+
 ## 环境变量
 
 | 变量                        | 默认 | 说明                                                                 |
@@ -266,7 +273,7 @@ bun run format:check   # 验证格式但不写入
 | `GUIDE_DEFAULT_PORT`        | `3000` | `GUIDE_PORT` / CLI 覆盖前的默认开发端口                          |
 | `GUIDE_SERVE_PORT`          | `3090` | `GUIDE_PORT` 覆盖前的默认静态预览端口                            |
 | `GUIDE_PORT`                | —    | 覆盖任一服务器的默认端口                                             |
-| `PORT`                      | —    | 仅由 `index.ts` 读取的备用端口                                       |
+| `PORT`                      | —    | 可选的 Railway / 容器端口；部署时更推荐将其映射到 `GUIDE_PORT`           |
 | `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | 请求/响应关联头名称                                           |
 | `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | 编译 CSS/JS 与复制公开资源的 max-age                  |
 | `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | 编译 CSS/JS 与复制公开资源的 SWR 窗口 |
