@@ -13,7 +13,6 @@ import {
   resolveGuidePublicFiles,
   resolveGuideStylesheetBuildCommand,
 } from "../src/server/runtime-config";
-import { renderDocument } from "../src/server/render/layout";
 import { extractGuideSections, normalizeAuthoringAssetUrls } from "../src/shared/authoring-guide";
 import { GUIDE_SERVER, toGuideRequestUrl } from "../src/shared/config";
 import { writeStructuredLog } from "../src/shared/logger";
@@ -269,6 +268,7 @@ const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, s
 await syncGeneratedOutput(stagingBuildDirectory, GUIDE_PATHS.buildDirectory);
 await rm(stagingBuildDirectory, { force: true, recursive: true });
 
+const { renderDocument } = await import("../src/server/render/layout");
 const snapshotRequestUrl = new URL(toGuideRequestUrl("/?section=s0&lang=bi&theme=dark"));
 const downloadGuideHtml = renderDocument(
   resolveGuideViewState(snapshotRequestUrl),
