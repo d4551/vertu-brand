@@ -91,6 +91,9 @@ interface GuideResolvedNumberSetting {
   warning: GuideRuntimeSettingWarning | null;
 }
 
+const resolveGuideDefaultHost = (env: GuideRuntimeEnvironment): string =>
+  typeof env.PORT === "string" && env.PORT.trim() ? "0.0.0.0" : GUIDE_RUNTIME_DEFAULTS.host;
+
 const resolveRuntimeStringSetting = (
   env: GuideRuntimeEnvironment,
   key: GuideRuntimeSettingKey,
@@ -169,7 +172,7 @@ export const resolveGuideRuntimeSettings = (env: GuideRuntimeEnvironment): Guide
     }
   };
 
-  const host = resolveRuntimeStringSetting(env, "GUIDE_HOST", GUIDE_RUNTIME_DEFAULTS.host, (value) => value);
+  const host = resolveRuntimeStringSetting(env, "GUIDE_HOST", resolveGuideDefaultHost(env), (value) => value);
   addWarning(host.warning);
 
   const defaultPort = resolveRuntimeIntegerSetting(env, "GUIDE_DEFAULT_PORT", GUIDE_RUNTIME_DEFAULTS.defaultPort);

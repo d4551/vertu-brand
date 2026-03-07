@@ -260,20 +260,19 @@ bun run format:check   # 验证格式但不写入
 
 ## Railway / Railpack
 
-- `railpack.json` 负责容器构建时的 Bun 安装、构建与启动契约。
 - `railway.json` 将 Railway 构建器固定为 `RAILPACK`，兼容 Railpack 成为默认构建器之前创建的服务。
-- Railpack 使用 `bun run build` 构建，并通过 `bun run start` 启动；该脚本现在指向生产用的 `src/server/serve.ts` SSR 启动路径。
-- 部署配置强制 `GUIDE_HOST=0.0.0.0`，因为仓库里的本地默认值 `localhost` 在 Railway 容器内无法对外监听。
+- 这个仓库在 Railway 上使用 Railpack 零配置：从 `package.json` 检测 Bun，执行 `bun run build`，并通过 `package.json` 里的 `start` 脚本启动。
+- 当 Railway 注入 `PORT` 时，服务器会自动绑定到 `0.0.0.0`；如果显式设置了 `GUIDE_HOST`，则仍以它为准。
 
 ## 环境变量
 
 | 变量                        | 默认 | 说明                                                                 |
 | --------------------------- | ---- | -------------------------------------------------------------------- |
-| `GUIDE_HOST`                | `localhost` | 共享监听主机名与规范本地 origin 主机                            |
+| `GUIDE_HOST`                | `localhost` | 共享监听主机名与规范本地 origin 主机；当存在 `PORT` 时容器默认回退到 `0.0.0.0` |
 | `GUIDE_DEFAULT_PORT`        | `3000` | `GUIDE_PORT` / CLI 覆盖前的默认开发端口                          |
 | `GUIDE_SERVE_PORT`          | `3090` | `GUIDE_PORT` 覆盖前的默认静态预览端口                            |
 | `GUIDE_PORT`                | —    | 覆盖任一服务器的默认端口                                             |
-| `PORT`                      | —    | 两个服务器入口都会遵循的 Railway / 容器回退端口                           |
+| `PORT`                      | —    | Railway / 容器端口；同时会把默认监听主机切换为 `0.0.0.0`                   |
 | `GUIDE_REQUEST_ID_HEADER`   | `x-request-id` | 请求/响应关联头名称                                           |
 | `GUIDE_STATIC_ASSET_MAX_AGE_SECONDS` | `3600` | 编译 CSS/JS 与复制公开资源的 max-age                  |
 | `GUIDE_STATIC_ASSET_STALE_WHILE_REVALIDATE_SECONDS` | `86400` | 编译 CSS/JS 与复制公开资源的 SWR 窗口 |

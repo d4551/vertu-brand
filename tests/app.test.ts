@@ -114,6 +114,16 @@ describe("guide shell rendering", () => {
     ]);
   });
 
+  test("binds to all interfaces for container platforms when PORT is present", () => {
+    const settings = resolveGuideRuntimeSettings({
+      PORT: "8080",
+    });
+
+    expect(settings.host).toBe("0.0.0.0");
+    expect(settings.defaultPort).toBe(GUIDE_RUNTIME_DEFAULTS.defaultPort);
+    expect(settings.servePort).toBe(GUIDE_RUNTIME_DEFAULTS.servePort);
+  });
+
   test("resolves HTMX event targets through the shared browser contract", () => {
     expect(
       resolveHtmxEventTarget(
