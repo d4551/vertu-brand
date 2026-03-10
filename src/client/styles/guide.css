@@ -6,17 +6,18 @@
 @source "../../../src";
 
 @theme {
-  --color-v-black: #080808;
-  --color-v-charcoal: #111;
-  --color-v-graphite: #1c1c1c;
-  --color-v-gold: #d4b978;
-  --color-v-gold-deep: #c4a55e;
-  --color-v-gold-light: #e8d9a8;
-  --color-v-ruby: #d4364e;
-  --color-v-ruby-deep: #7a1d2e;
-  --color-v-cream: #f2ede5;
-  --color-v-ivory: #faf7f2;
-  --color-v-titanium: #b5afa7;
+  /* Single source of truth: reference brand-guide.css --v-* tokens */
+  --color-v-black: var(--v-black);
+  --color-v-charcoal: var(--v-charcoal);
+  --color-v-graphite: var(--v-graphite);
+  --color-v-gold: var(--v-gold);
+  --color-v-gold-deep: var(--v-gold-deep);
+  --color-v-gold-light: var(--v-gold-light);
+  --color-v-ruby: var(--v-ruby);
+  --color-v-ruby-deep: var(--v-ruby-deep);
+  --color-v-cream: var(--v-cream);
+  --color-v-ivory: var(--v-ivory);
+  --color-v-titanium: var(--v-titanium);
 }
 
 @plugin "daisyui" {

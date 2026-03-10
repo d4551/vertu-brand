@@ -116,8 +116,10 @@
 
   /* Repeated semi-transparent values */
   --gold-tint: rgb(212 185 120 / 8%);
+  --gold-tint-10: rgb(212 185 120 / 10%);
   --gold-tint-md: rgb(212 185 120 / 12%);
   --gold-tint-lg: rgb(212 185 120 / 15%);
+  --gold-tint-20: rgb(212 185 120 / 20%);
   --gold-tint-xl: rgb(212 185 120 / 30%);
   --shadow-light: rgb(0 0 0 / 4%);
   --shadow-md: rgb(0 0 0 / 8%);
@@ -829,14 +831,14 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   border-color: var(--accent);
 }
 .color-swatch { height: 130px; position: relative; transition: height 0.3s var(--ease); }
-.swatch-vertu-black { background: #080808; }
-.swatch-vertu-gold { background: #D4B978; }
-.swatch-ruby { background: #D4364E; }
-.swatch-vertu-cream { background: #F2EDE5; }
-.swatch-charcoal { background: #111; }
-.swatch-gold-deep { background: #C4A55E; }
-.swatch-titanium { background: #B5AFA7; }
-.swatch-ruby-deep { background: #7A1D2E; }
+.swatch-vertu-black { background: var(--v-black); }
+.swatch-vertu-gold { background: var(--v-gold); }
+.swatch-ruby { background: var(--v-ruby); }
+.swatch-vertu-cream { background: var(--v-cream); }
+.swatch-charcoal { background: var(--v-charcoal); }
+.swatch-gold-deep { background: var(--v-gold-deep); }
+.swatch-titanium { background: var(--v-titanium); }
+.swatch-ruby-deep { background: var(--v-ruby-deep); }
 .color-card:hover .color-swatch { height: 140px; }
 
 .color-swatch-tag {
@@ -900,15 +902,15 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-.pantone-chip:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgb(0 0 0 / 6%); }
+.pantone-chip:hover { transform: translateY(-3px); box-shadow: 0 8px 24px var(--shadow-light); }
 .pantone-swatch { height: 90px; }
-.pantone-871 { background: linear-gradient(135deg, #C4A55E, #D4B978, #BFA04A); }
-.pantone-872 { background: linear-gradient(135deg, #AE9142, #C4A55E, #9E8238); }
+.pantone-871 { background: linear-gradient(135deg, var(--v-gold-deep), var(--v-gold), #BFA04A); }
+.pantone-872 { background: linear-gradient(135deg, #AE9142, var(--v-gold-deep), #9E8238); }
 .pantone-10124 { background: linear-gradient(135deg, #B8A070, #D4C49A, #A8925E); }
-.pantone-black-6 { background: #080808; }
-.pantone-1935 { background: #D4364E; }
-.pantone-7527 { background: #F2EDE5; }
-.pantone-warm-gray-5 { background: #B5AFA7; }
+.pantone-black-6 { background: var(--v-black); }
+.pantone-1935 { background: var(--v-ruby); }
+.pantone-7527 { background: var(--v-cream); }
+.pantone-warm-gray-5 { background: var(--v-titanium); }
 
 .pantone-label {
   padding: 10px; font-family: var(--font-mono); font-size: 0.625rem;
@@ -937,11 +939,11 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   padding: 4px 12px; border-radius: 3px;
   font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500;
 }
-.sample-cream-on-black { background: #080808; color: #F2EDE5; }
-.sample-gold-on-black { background: #080808; color: #D4B978; }
-.sample-titanium-on-black { background: #080808; color: #B5AFA7; }
-.sample-ruby-on-black { background: #080808; color: #D4364E; }
-.sample-gold-deep-on-charcoal { background: #111; color: #C4A55E; }
+.sample-cream-on-black { background: var(--v-black); color: var(--v-cream); }
+.sample-gold-on-black { background: var(--v-black); color: var(--v-gold); }
+.sample-titanium-on-black { background: var(--v-black); color: var(--v-titanium); }
+.sample-ruby-on-black { background: var(--v-black); color: var(--v-ruby); }
+.sample-gold-deep-on-charcoal { background: var(--v-charcoal); color: var(--v-gold-deep); }
 .pass { display: inline-block; font-family: var(--font-mono); font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 2px; background: var(--color-success-soft); color: var(--color-success-text); }
 .fail { display: inline-block; font-family: var(--font-mono); font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 2px; background: var(--color-error-soft); color: var(--color-error-text); }
 
@@ -1036,10 +1038,10 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   font-family: var(--font-mono); font-size: 0.5rem;
   letter-spacing: 0.15em; text-transform: uppercase;
 }
-.logo-box-bg-black { background: #080808; }
-.logo-box-bg-light { background: #FDFBF7; }
-.logo-box-bg-charcoal { background: #111; }
-.logo-box-bg-gold { background: #D4B978; }
+.logo-box-bg-black { background: var(--v-black); }
+.logo-box-bg-light { background: var(--bg); }
+.logo-box-bg-charcoal { background: var(--v-charcoal); }
+.logo-box-bg-gold { background: var(--v-gold); }
 .logo-box-label-dark { color: rgb(255 255 255 / 40%); }
 .logo-box-label-light { color: rgb(0 0 0 / 35%); }
 
@@ -1111,7 +1113,7 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 
 .motion-card:nth-child(3):hover .motion-dot {
   transform: scale(1.2);
-  box-shadow: 0 8px 24px rgb(212 185 120 / 30%);
+  box-shadow: 0 8px 24px var(--gold-tint-xl);
 }
 
 @keyframes breathe { 0%,100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } }
@@ -1242,7 +1244,7 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   /* Cards */
   --card-border-tint: var(--border);
   --bento-shadow: 0 4px 30px rgb(0 0 0 / 10%);
-  --bento-hover-shadow: 0 20px 40px rgb(0 0 0 / 20%), inset 0 0 0 1px rgb(212 185 120 / 10%);
+  --bento-hover-shadow: 0 20px 40px rgb(0 0 0 / 20%), inset 0 0 0 1px var(--gold-tint-10);
 
   /* Grid visualizer */
   --grid-viz-bg: rgb(0 0 0 / 40%);
@@ -1331,7 +1333,7 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
     --social-border-tint: rgb(255 255 255 / 10%);
     --card-border-tint: var(--border);
     --bento-shadow: 0 4px 30px rgb(0 0 0 / 10%);
-    --bento-hover-shadow: 0 20px 40px rgb(0 0 0 / 20%), inset 0 0 0 1px rgb(212 185 120 / 10%);
+    --bento-hover-shadow: 0 20px 40px rgb(0 0 0 / 20%), inset 0 0 0 1px var(--gold-tint-10);
     --grid-viz-bg: rgb(0 0 0 / 40%);
     --gauge-needle-bg: var(--v-cream);
     --gauge-needle-box-shadow: 0 0 10px rgb(255 255 255 / 50%);
@@ -2014,7 +2016,7 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 
 .grid-col {
   background: var(--gold-tint);
-  border: 1px solid rgb(212 185 120 / 20%);
+  border: 1px solid var(--gold-tint-20);
   border-radius: 6px;
   height: 100%;
   position: relative;
@@ -2025,7 +2027,7 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgb(212 185 120 / 20%) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--gold-tint-20) 0%, transparent 100%);
   opacity: 0.5;
 }
 
@@ -2073,21 +2075,21 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
 .color-chart-segment-65 {
   width: 65%;
   border-right: 1px solid rgb(255 255 255 / 5%);
-  background: #080808;
-  color: #B5AFA7;
+  background: var(--v-black);
+  color: var(--v-titanium);
 }
 
 .color-chart-segment-20 {
   width: 20%;
   border-right: 1px solid rgb(255 255 255 / 5%);
-  background: #111;
-  color: #B5AFA7;
+  background: var(--v-charcoal);
+  color: var(--v-titanium);
 }
 
 .color-chart-segment-10 {
   width: 10%;
-  background: #D4B978;
-  color: #080808;
+  background: var(--v-gold);
+  color: var(--v-black);
   font-weight: 700;
 }
 
@@ -2129,9 +2131,9 @@ code { font-family: var(--font-mono); font-size: 0.8125em; background: var(--sur
   border-radius: 999px;
   border: 1px solid var(--border);
 }
-.color-chart-legend-swatch-65 { background: #080808; }
-.color-chart-legend-swatch-20 { background: #111; }
-.color-chart-legend-swatch-10 { background: #D4B978; }
+.color-chart-legend-swatch-65 { background: var(--v-black); }
+.color-chart-legend-swatch-20 { background: var(--v-charcoal); }
+.color-chart-legend-swatch-10 { background: var(--v-gold); }
 .color-chart-legend-swatch-5 { background: var(--v-ruby); }
 
 @media (width <= 960px) {

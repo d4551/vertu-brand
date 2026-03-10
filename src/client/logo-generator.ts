@@ -1,7 +1,4 @@
-import {
-  GUIDE_ASSET_OPERATOR_IDS,
-  GUIDE_ASSET_OPERATOR_SELECTORS,
-} from "../shared/asset-operator-contract";
+import { GUIDE_ASSET_OPERATOR_IDS, GUIDE_ASSET_OPERATOR_SELECTORS } from "../shared/asset-operator-contract";
 import { GUIDE_BRAND_COLOR_TOKENS } from "../shared/brand-tokens";
 
 const LOGO_DEFAULT_BACKGROUND = `#${GUIDE_BRAND_COLOR_TOKENS.black}`;

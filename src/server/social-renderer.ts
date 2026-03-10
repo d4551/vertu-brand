@@ -126,6 +126,8 @@ const THEME_PALETTES: Record<SocialTheme, SocialThemePalette> = Object.fromEntri
 const assetCache = new Map<string, Promise<string>>();
 const renderedAssetCache = new Map<string, Promise<Uint8Array>>();
 const renderedCarouselCache = new Map<string, Promise<Uint8Array>>();
+
+/** Max entries per cache before eviction. Keeps memory bounded under load. */
 const RENDER_CACHE_MAX_ENTRIES = 192;
 
 const element = (type: string, props: SocialNodeProps): SocialNode => ({ props, type });

@@ -25,6 +25,7 @@ import {
   resolveGuideSocialQueryValues,
   resolveSectionSocialPreset,
   resolveSocialThemeFromGuideTheme,
+  SOCIAL_ASSET_DEFINITIONS,
   SOCIAL_PRESET_REGISTRY,
   toSocialGuideHref,
   toSocialAssetHref,
@@ -36,8 +37,14 @@ import { renderSectionMarkup } from "../content/source";
 /**
  * Renders the full SSR document for direct navigation.
  */
-export const renderDocument = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
-  const sectionTitle = GUIDE_NAVIGATION.find((item) => item.id === viewState.section)?.title[resolveGuideLocale(viewState.language)];
+export const renderDocument = (
+  viewState: GuideViewState,
+  requestOrigin: string,
+  requestQuery: URLSearchParams
+): string => {
+  const sectionTitle = GUIDE_NAVIGATION.find((item) => item.id === viewState.section)?.title[
+    resolveGuideLocale(viewState.language)
+  ];
   const description =
     viewState.section === "s0"
       ? resolveCopy("guideDescription", viewState.language)
@@ -48,6 +55,7 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
       ? `${resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`
       : `${sectionTitle ?? resolveCopy("guideDocumentTitle", viewState.language)} | ${resolveCopy("guideTitle", viewState.language)}`;
   const socialPreset = resolveSectionSocialPreset(viewState.section);
+  const ogAssetDef = SOCIAL_ASSET_DEFINITIONS["og-card"];
   const canonicalHref = resolveCanonicalGuideHref(viewState, requestOrigin, requestQuery);
   const socialImageHref = toSocialAssetHref(
     {
@@ -75,8 +83,8 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
     `  <meta property="og:description" content="${escapeAttribute(description)}">`,
     '  <meta property="og:type" content="website">',
     `  <meta property="og:image" content="${escapeAttribute(socialImageHref)}">`,
-    '  <meta property="og:image:width" content="1200">',
-    '  <meta property="og:image:height" content="630">',
+    `  <meta property="og:image:width" content="${ogAssetDef.width}">`,
+    `  <meta property="og:image:height" content="${ogAssetDef.height}">`,
     '  <meta name="twitter:card" content="summary_large_image">',
     `  <meta name="twitter:image" content="${escapeAttribute(socialImageHref)}">`,
     `  <link rel="canonical" href="${escapeAttribute(canonicalHref)}">`,
@@ -94,7 +102,11 @@ export const renderDocument = (viewState: GuideViewState, requestOrigin: string,
 /**
  * Renders the branded page wrapper for full-page HTMX swaps and direct SSR loads.
  */
-export const renderGuidePage = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
+export const renderGuidePage = (
+  viewState: GuideViewState,
+  requestOrigin: string,
+  requestQuery: URLSearchParams
+): string => {
   const skipLabel = resolveCopy("skipToMainContent", viewState.language);
 
   return `
@@ -329,11 +341,7 @@ const renderThemeIcon = (theme: GuideViewState["theme"]): string =>
 
 const renderLanguageLabel = (lang: GuideViewState["language"], controlLocale: "en" | "zh"): string => {
   const key =
-    lang === "en"
-      ? "languageEnglishShort"
-      : lang === "zh"
-        ? "languageChineseShort"
-        : "languageBilingualShort";
+    lang === "en" ? "languageEnglishShort" : lang === "zh" ? "languageChineseShort" : "languageBilingualShort";
   return escapeHtml(resolveLocaleCopy(key, controlLocale));
 };
 
@@ -352,15 +360,14 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
     section: viewState.section,
     socialTheme: socialQuery.socialTheme,
   });
-  const themeAriaLabel =
-    resolveCopy("toggleThemeTo", viewState.language, {
-      value:
-        nextTheme === "dark"
-          ? resolveCopy("themeDark", viewState.language)
-          : nextTheme === "light"
-            ? resolveCopy("themeLight", viewState.language)
-            : resolveCopy("themeSystem", viewState.language),
-    });
+  const themeAriaLabel = resolveCopy("toggleThemeTo", viewState.language, {
+    value:
+      nextTheme === "dark"
+        ? resolveCopy("themeDark", viewState.language)
+        : nextTheme === "light"
+          ? resolveCopy("themeLight", viewState.language)
+          : resolveCopy("themeSystem", viewState.language),
+  });
 
   const langCycleHref = toSocialGuideHref({
     approvedAssetId: socialQuery.approvedAssetId,
@@ -371,15 +378,14 @@ const renderSidebarControls = (viewState: GuideViewState, requestQuery: URLSearc
     section: viewState.section,
     socialTheme: socialQuery.socialTheme,
   });
-  const langAriaLabel =
-    resolveCopy("toggleLanguageTo", viewState.language, {
-      value:
-        nextLang === "en"
-          ? resolveCopy("languageEnglish", viewState.language)
-          : nextLang === "zh"
-            ? resolveCopy("languageChinese", viewState.language)
-            : resolveCopy("languageBilingual", viewState.language),
-    });
+  const langAriaLabel = resolveCopy("toggleLanguageTo", viewState.language, {
+    value:
+      nextLang === "en"
+        ? resolveCopy("languageEnglish", viewState.language)
+        : nextLang === "zh"
+          ? resolveCopy("languageChinese", viewState.language)
+          : resolveCopy("languageBilingual", viewState.language),
+  });
 
   return `
   <div class="guide-sidebar-controls">
@@ -452,7 +458,11 @@ const renderCoverMetaItem = (
   })}</dd>
 </dl>`;
 
-const renderGuideSections = (viewState: GuideViewState, requestOrigin: string, requestQuery: URLSearchParams): string => {
+const renderGuideSections = (
+  viewState: GuideViewState,
+  requestOrigin: string,
+  requestQuery: URLSearchParams
+): string => {
   const socialPreviewModel = resolveGuideSocialPreviewRenderModel(
     requestQuery,
     viewState.language,

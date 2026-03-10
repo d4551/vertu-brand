@@ -187,10 +187,9 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                   asset.fileName
                 )}</p></td><td class="font-mono text-xs">${asset.width}×${asset.height}</td><td class="text-right"><a class="btn btn-xs btn-outline" href="${escapeAttribute(
                   asset.href
-                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(resolveAssetDownloadAriaLabel(
-                  asset.kind,
-                  language
-                ))}">${downloadVisibleLabel}</a></td></tr>`
+                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(
+                  resolveAssetDownloadAriaLabel(asset.kind, language)
+                )}">${downloadVisibleLabel}</a></td></tr>`
             )
             .join("")}</tbody>`,
           `        </table>`,
@@ -207,10 +206,9 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                   asset.width
                 }×${asset.height}</span><a class="btn btn-sm btn-outline" href="${escapeAttribute(
                   asset.href
-                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(resolveAssetDownloadAriaLabel(
-                  asset.kind,
-                  language
-                ))}">${downloadVisibleLabel}</a></div></article>`
+                )}" download="${escapeAttribute(asset.fileName)}" aria-label="${escapeAttribute(
+                  resolveAssetDownloadAriaLabel(asset.kind, language)
+                )}">${downloadVisibleLabel}</a></div></article>`
             )
             .join("")}</div>`,
         ].join("\n")
@@ -230,15 +228,13 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
                 language
               )}</p><p class="social-preview-carousel__ratio">${frame.width}×${frame.height}</p><div class="social-preview-carousel__actions"><a class="btn btn-xs btn-outline" href="${escapeAttribute(
                 frame.href
-              )}" target="_blank" rel="noopener" aria-label="${escapeAttribute(resolveCarouselPreviewAriaLabel(
-                frame.frame,
-                language
-              ))}">${previewVisibleLabel}</a><a class="btn btn-xs btn-neutral" href="${escapeAttribute(
+              )}" target="_blank" rel="noopener" aria-label="${escapeAttribute(
+                resolveCarouselPreviewAriaLabel(frame.frame, language)
+              )}">${previewVisibleLabel}</a><a class="btn btn-xs btn-neutral" href="${escapeAttribute(
                 frame.href
-              )}" download="${escapeAttribute(frame.fileName)}" aria-label="${escapeAttribute(resolveCarouselDownloadAriaLabel(
-                frame.frame,
-                language
-              ))}">${downloadVisibleLabel}</a></div></article>`
+              )}" download="${escapeAttribute(frame.fileName)}" aria-label="${escapeAttribute(
+                resolveCarouselDownloadAriaLabel(frame.frame, language)
+              )}">${downloadVisibleLabel}</a></div></article>`
           )
           .join("")}</div></div>`
       : "",
@@ -251,7 +247,9 @@ export const renderSocialPreviewMarkup = (model: SocialPreviewModel): string => 
 /**
  * Resolves the embedded preview panel state from a typed preview model.
  */
-export const resolveGuideSocialPreviewState = (model: Pick<SocialPreviewModel, "assets" | "carouselFrames">): GuideSocialPreviewState =>
+export const resolveGuideSocialPreviewState = (
+  model: Pick<SocialPreviewModel, "assets" | "carouselFrames">
+): GuideSocialPreviewState =>
   normalizeGuideSocialPreviewState(model.assets.length || model.carouselFrames.length ? "success" : "empty");
 
 const updateSelectedOption = (

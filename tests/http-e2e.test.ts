@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { app } from "../src/server/app";
-import { GUIDE_BRAND_ASSETS, GUIDE_DOWNLOADS, GUIDE_REQUEST_ID_HEADER, HTMX_REQUEST_HEADERS } from "../src/shared/config";
+import {
+  GUIDE_BRAND_ASSETS,
+  GUIDE_DOWNLOADS,
+  GUIDE_REQUEST_ID_HEADER,
+  HTMX_REQUEST_HEADERS,
+} from "../src/shared/config";
 import { GUIDE_DOM_IDS } from "../src/shared/shell-contract";
 
 let liveServer: ReturnType<typeof app.listen> | null = null;

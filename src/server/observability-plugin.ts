@@ -19,7 +19,10 @@ export const resolveGuideRequestId = (request: Request): string => {
   return requestId;
 };
 
-const resolveStatusCode = (response: Response | object | string | number | boolean | null | undefined, setStatus: number | string | undefined): number => {
+const resolveStatusCode = (
+  response: Response | object | string | number | boolean | null | undefined,
+  setStatus: number | string | undefined
+): number => {
   if (response instanceof Response) {
     return response.status;
   }

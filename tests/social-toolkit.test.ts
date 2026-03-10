@@ -236,9 +236,9 @@ describe("social toolkit contracts", () => {
 
     expect(manifest.packId).toBe("campaign-launch");
     expect(manifest.assets.some((asset) => asset.kind === "og-card")).toBe(true);
-    expect(manifest.assets.every((asset) => asset.href.startsWith(`https://vertu.example${GUIDE_ROUTES.socialAsset}/`))).toBe(
-      true
-    );
+    expect(
+      manifest.assets.every((asset) => asset.href.startsWith(`https://vertu.example${GUIDE_ROUTES.socialAsset}/`))
+    ).toBe(true);
     expect(manifest.carouselFrames).toHaveLength(3);
     expect(manifest.carouselFrames[0]?.href).toContain(`${GUIDE_ROUTES.socialAsset}/carousel/campaign-launch/1.png`);
   });
@@ -466,9 +466,7 @@ describe("social toolkit routes", () => {
   });
 
   test("rejects invalid social route inputs with deterministic error envelopes", async () => {
-    const invalidTheme = await app.handle(
-      new Request(toGuideRequestUrl(buildSocialAssetPath({ theme: "nope" })))
-    );
+    const invalidTheme = await app.handle(new Request(toGuideRequestUrl(buildSocialAssetPath({ theme: "nope" }))));
     const invalidApprovedAsset = await app.handle(
       new Request(toGuideRequestUrl(buildSocialAssetPath({ approvedAsset: "nope" })))
     );

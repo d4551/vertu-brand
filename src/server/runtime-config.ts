@@ -78,7 +78,10 @@ export const resolveGuideFontFilePaths = (projectRoot = PROJECT_ROOT) =>
   ({
     dmSans400: resolve(projectRoot, "node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff"),
     dmSans700: resolve(projectRoot, "node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff"),
-    ibmPlexMono400: resolve(projectRoot, "node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff"),
+    ibmPlexMono400: resolve(
+      projectRoot,
+      "node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff"
+    ),
     instrumentSerif400: resolve(
       projectRoot,
       "node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff"

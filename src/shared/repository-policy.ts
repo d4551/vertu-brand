@@ -98,7 +98,12 @@ export const findExportedDeclarationsMissingJsDoc = async (
 
 const isJsDocValidatedExport = (
   node: ts.Node
-): node is ts.ClassDeclaration | ts.FunctionDeclaration | ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.VariableStatement =>
+): node is
+  | ts.ClassDeclaration
+  | ts.FunctionDeclaration
+  | ts.InterfaceDeclaration
+  | ts.TypeAliasDeclaration
+  | ts.VariableStatement =>
   (ts.isClassDeclaration(node) ||
     ts.isFunctionDeclaration(node) ||
     ts.isInterfaceDeclaration(node) ||
@@ -107,10 +112,16 @@ const isJsDocValidatedExport = (
   hasExportModifier(node);
 
 const hasExportModifier = (node: ts.Node): boolean =>
-  ts.canHaveModifiers(node) && (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false);
+  ts.canHaveModifiers(node) &&
+  (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false);
 
 const getExportedDeclarationNames = (
-  node: ts.ClassDeclaration | ts.FunctionDeclaration | ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.VariableStatement,
+  node:
+    | ts.ClassDeclaration
+    | ts.FunctionDeclaration
+    | ts.InterfaceDeclaration
+    | ts.TypeAliasDeclaration
+    | ts.VariableStatement,
   sourceFile: ts.SourceFile
 ): readonly string[] => {
   if (ts.isVariableStatement(node)) {

@@ -183,7 +183,7 @@ describe("repository policy", () => {
     expect(layoutSource.includes("resolveGuideLocale")).toBe(true);
     expect(htmxEventContractSource.includes("HTMX_BROWSER_EVENTS")).toBe(true);
     expect(htmxEventContractSource.includes("resolveHtmxEventTarget")).toBe(true);
-    expect(htmxEventContractSource.includes('interface HTMLElementEventMap')).toBe(true);
+    expect(htmxEventContractSource.includes("interface HTMLElementEventMap")).toBe(true);
     expect(enhancementSource.includes("toSocialGuideHref")).toBe(true);
     expect(enhancementSource.includes("syncActiveSectionState")).toBe(true);
     expect(layoutSource.includes(`hx-indicator="\${GUIDE_HTMX.pageIndicator}"`)).toBe(true);
@@ -230,7 +230,7 @@ describe("repository policy", () => {
     expect(socialToolkitSource.includes("GUIDE_SERVER.localOrigin")).toBe(true);
     expect(socialToolkitSource.includes("url.hash = input.section")).toBe(false);
     expect(sharedConfigSource.includes("localOrigin: toGuideOrigin(")).toBe(true);
-    expect(sharedConfigSource.includes('downloads: GUIDE_DOWNLOADS_ROUTE')).toBe(true);
+    expect(sharedConfigSource.includes("downloads: GUIDE_DOWNLOADS_ROUTE")).toBe(true);
     expect(sharedConfigSource.includes("href: toGuideDownloadHref(")).toBe(true);
     expect(sharedConfigSource.includes("toGuideImageAssetHref")).toBe(true);
   });
@@ -307,9 +307,9 @@ describe("repository policy", () => {
     expect(i18nSource.includes("socialApprovedAssetAgentQ")).toBe(false);
     expect(i18nSource.includes("socialApprovedAssetQuantumFlip")).toBe(false);
     expect(i18nSource.includes("socialApprovedAssetSignature")).toBe(false);
-    expect(socialRendererSource.includes('carouselHeading: request.language === "zh" ? "轮播帧" : "Carousel Frames"')).toBe(
-      false
-    );
+    expect(
+      socialRendererSource.includes('carouselHeading: request.language === "zh" ? "轮播帧" : "Carousel Frames"')
+    ).toBe(false);
     [
       "Agent Q Collector Edition",
       "Launch-approved hero asset",
@@ -398,7 +398,9 @@ describe("repository policy", () => {
   });
 
   test("keeps downloads-surface DOM ids centralized across markup and browser enhancements", async () => {
-    const assetOperatorContractSource = await Bun.file(join(ROOT, "src", "shared", "asset-operator-contract.ts")).text();
+    const assetOperatorContractSource = await Bun.file(
+      join(ROOT, "src", "shared", "asset-operator-contract.ts")
+    ).text();
     const logoGeneratorSource = await Bun.file(join(ROOT, "src", "client", "logo-generator.ts")).text();
     const socialToolkitClientSource = await Bun.file(join(ROOT, "src", "client", "social-toolkit.ts")).text();
     const sectionMarkupSource = await Bun.file(join(ROOT, "src", "shared", "section-markup.ts")).text();

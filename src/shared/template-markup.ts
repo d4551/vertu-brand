@@ -36,7 +36,9 @@ export const renderTemplateCardMarkup = (language: GuideLanguage, templateId: Gu
   const template = GUIDE_TEMPLATE_CATALOG[templateId];
   const download = GUIDE_DOWNLOADS[template.downloadId];
   const downloadAria =
-    template.downloadId === "dl-pptx" ? resolveCopy("downloadPptxAria", language) : resolveCopy("downloadDocxAria", language);
+    template.downloadId === "dl-pptx"
+      ? resolveCopy("downloadPptxAria", language)
+      : resolveCopy("downloadDocxAria", language);
 
   return `<article class="template-library-entry" role="listitem">
     <a

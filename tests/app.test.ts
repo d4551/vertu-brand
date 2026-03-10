@@ -239,7 +239,9 @@ describe("guide shell rendering", () => {
   });
 
   test("routes local dev rebuilds through the shared app-vs-full build contract", () => {
-    expect(resolveGuideDevBuildTarget(resolve(GUIDE_PATHS.projectRoot, "src/client/progressive-enhancements.ts"))).toBe("app");
+    expect(resolveGuideDevBuildTarget(resolve(GUIDE_PATHS.projectRoot, "src/client/progressive-enhancements.ts"))).toBe(
+      "app"
+    );
     expect(resolveGuideDevBuildTarget(resolve(GUIDE_PATHS.projectRoot, "styles", "brand-guide.css"))).toBe("app");
     expect(resolveGuideDevBuildTarget(resolve(GUIDE_PATHS.projectRoot, "scripts/generate-templates.mjs"))).toBe("full");
     expect(resolveGuideDevBuildTarget(resolve(GUIDE_PATHS.projectRoot, "src/shared/template-catalog.ts"))).toBe("full");
@@ -259,7 +261,9 @@ describe("guide shell rendering", () => {
     });
 
     expect(stagingPaths.publicRoot).toBe(resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public"));
-    expect(stagingPaths.clientScriptOutput).toBe(resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/assets/guide.js"));
+    expect(stagingPaths.clientScriptOutput).toBe(
+      resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/assets/guide.js")
+    );
     expect(stagingPaths.sectionRegistryOutput).toBe(
       resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/content/sections.generated.ts")
     );
@@ -275,10 +279,12 @@ describe("guide shell rendering", () => {
 
     expect(GUIDE_PUBLIC_DIRECTORIES.length).toBe(stagingDirectories.length);
     expect(GUIDE_PUBLIC_FILES.length).toBe(stagingFiles.length);
-    expect(stagingDirectories[0]?.outputPath).toBe(resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/assets/images"));
-    expect(stagingFiles[0]?.outputPath.startsWith(resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/"))).toBe(
-      true
+    expect(stagingDirectories[0]?.outputPath).toBe(
+      resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/assets/images")
     );
+    expect(
+      stagingFiles[0]?.outputPath.startsWith(resolve(GUIDE_PATHS.projectRoot, ".generated-next-test/public/"))
+    ).toBe(true);
   });
 
   test("keeps social fingerprint inputs centralized in runtime config", () => {
@@ -301,7 +307,9 @@ describe("guide shell rendering", () => {
   test("derives full-build triggers and social fingerprint inputs from shared project-root resolvers", () => {
     expect(resolveGuideSocialBuildInputFiles(GUIDE_PATHS.projectRoot)).toEqual(GUIDE_SOCIAL_BUILD_INPUT_FILES);
     expect(resolveGuideFullBuildTriggerPaths(GUIDE_PATHS.projectRoot)).toEqual(GUIDE_FULL_BUILD_TRIGGER_PATHS);
-    expect(GUIDE_FULL_BUILD_TRIGGER_PATHS).toContain(resolve(GUIDE_PATHS.projectRoot, "scripts/generate-templates.mjs"));
+    expect(GUIDE_FULL_BUILD_TRIGGER_PATHS).toContain(
+      resolve(GUIDE_PATHS.projectRoot, "scripts/generate-templates.mjs")
+    );
     expect(GUIDE_SOCIAL_BUILD_INPUT_FILES).toContain(resolve(GUIDE_PATHS.projectRoot, "src/server/social-renderer.ts"));
   });
 
@@ -484,16 +492,20 @@ describe("authoring section extraction", () => {
     expect(typographyMarkup).toContain('id="typeTrack"');
     expect(downloadsMarkup).toContain(`id="${GUIDE_ASSET_OPERATOR_IDS.logoCanvas}"`);
     expect(downloadsMarkup).toContain(`id="${GUIDE_ASSET_OPERATOR_IDS.socialForm}"`);
-    expect(downloadsMarkup).toContain('class="grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"');
+    expect(downloadsMarkup).toContain(
+      'class="grid w-full items-stretch gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"'
+    );
     expect(downloadsMarkup).toContain('class="social-toolkit-controls');
     expect(downloadsMarkup).toContain(`action="${GUIDE_ROUTES.guide}"`);
     expect(downloadsMarkup).toContain(`hx-get="${GUIDE_ROUTES.socialPreview}"`);
     expect(downloadsMarkup).toContain('hx-disabled-elt="find select"');
     expect(downloadsMarkup).toContain(`id="${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}"`);
-    expect(
-      downloadsMarkup
-    ).toContain(`id="${GUIDE_ASSET_OPERATOR_IDS.socialAssetKind}" name="${SOCIAL_GUIDE_QUERY_PARAMS.asset}"`);
-    expect(downloadsMarkup).toContain(`id="${GUIDE_ASSET_OPERATOR_IDS.socialTheme}" name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}"`);
+    expect(downloadsMarkup).toContain(
+      `id="${GUIDE_ASSET_OPERATOR_IDS.socialAssetKind}" name="${SOCIAL_GUIDE_QUERY_PARAMS.asset}"`
+    );
+    expect(downloadsMarkup).toContain(
+      `id="${GUIDE_ASSET_OPERATOR_IDS.socialTheme}" name="${SOCIAL_GUIDE_QUERY_PARAMS.theme}"`
+    );
     expect(downloadsMarkup).toContain(`hx-target="#${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}"`);
     expect(downloadsMarkup).toContain('hx-trigger="submit"');
     expect(downloadsMarkup).toContain('hx-sync="this:replace"');
@@ -597,7 +609,9 @@ describe("authoring section extraction", () => {
     expect(response.status).toBe(200);
     expect(html).toContain('id="social-preview-panel"');
     expect(html).toContain('data-social-state="idle"');
-    expect(html).toContain('value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"');
+    expect(html).toContain(
+      'value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"'
+    );
     expect(html).toContain('option value="quantum-flip" selected="selected"');
     expect(html).toContain('option value="gold" selected="selected"');
     expect(html).toContain("social-preview-idle");

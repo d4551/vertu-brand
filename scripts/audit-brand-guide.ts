@@ -112,7 +112,9 @@ if (!fullHtml.includes("传播套件预览")) {
 }
 
 if (
-  !fullHtml.includes('value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"') ||
+  !fullHtml.includes(
+    'value="campaign-event" data-asset-kinds="og-card,event-invite,announcement-card,quote-card,linkedin-post,x-header" data-default-theme="gold" data-default-approved-asset="quantum-flip" selected="selected"'
+  ) ||
   !fullHtml.includes('option value="quantum-flip" selected="selected"') ||
   !fullHtml.includes('option value="gold" selected="selected"') ||
   !fullHtml.includes('id="social-preview-panel"') ||
@@ -393,7 +395,7 @@ if (
 if (
   !htmxEventContractSource.includes("HTMX_BROWSER_EVENTS") ||
   !htmxEventContractSource.includes("resolveHtmxEventTarget") ||
-  !htmxEventContractSource.includes('interface HTMLElementEventMap') ||
+  !htmxEventContractSource.includes("interface HTMLElementEventMap") ||
   !viewStateSource.includes("resolveGuideState") ||
   !viewStateSource.includes("resolveGuideDocumentLanguageTag") ||
   !viewStateSource.includes("resolveGuideLocale") ||

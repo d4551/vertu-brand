@@ -4,6 +4,7 @@ import {
   resolveHtmxEventTarget,
   type HtmxAfterSwapEventDetail,
   type HtmxRequestLifecycleEventDetail,
+  type HtmxTargetedEventDetail,
 } from "../shared/htmx-event-contract";
 import { normalizeGuideSocialPreviewState, toSocialGuideHref } from "../shared/social-toolkit";
 import { resolveGuideState } from "../shared/view-state";
@@ -14,7 +15,7 @@ let pendingSocialSubmitFrame = 0;
 type SocialHistoryMode = "push" | "replace";
 
 const resolveSocialPreviewTarget = (
-  event: CustomEvent<HtmxAfterSwapEventDetail | HtmxRequestLifecycleEventDetail>
+  event: CustomEvent<HtmxAfterSwapEventDetail | HtmxRequestLifecycleEventDetail | HtmxTargetedEventDetail>
 ): HTMLElement | null => {
   const target = resolveHtmxEventTarget(event);
   return target?.id === GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel ? target : null;
@@ -124,15 +125,23 @@ export const initializeSocialToolkit = ({ resolveGuidePage, resolveShell }: Soci
         target.setAttribute("aria-busy", "false");
       }
     });
+    document.body.addEventListener(HTMX_BROWSER_EVENTS.swapError, (event) => {
+      const target = resolveSocialPreviewTarget(event);
+      if (target) {
+        target.dataset.socialState = "error";
+        target.setAttribute("aria-busy", "false");
+      }
+    });
     socialPreviewEventsBound = true;
   }
 
   const syncAllowedAssetKinds = (): void => {
     const selectedPackOption = resolveSelectedPackOption(selectPack);
-    const allowedKindList = selectedPackOption?.dataset.assetKinds
-      ?.split(",")
-      .map((value) => value.trim())
-      .filter(Boolean) ?? [];
+    const allowedKindList =
+      selectedPackOption?.dataset.assetKinds
+        ?.split(",")
+        .map((value) => value.trim())
+        .filter(Boolean) ?? [];
     const allowedKinds = new Set<string>(allowedKindList);
 
     Array.from(selectAssetKind.options).forEach((option) => {

@@ -174,7 +174,9 @@ export const isGuideSocialPreviewState = (value: string): value is GuideSocialPr
  * Normalizes arbitrary preview-state input into the canonical social preview state.
  */
 export const normalizeGuideSocialPreviewState = (value: string | null | undefined): GuideSocialPreviewState => {
-  const normalized = String(value ?? "").trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
   return isGuideSocialPreviewState(normalized) ? normalized : "idle";
 };
 
@@ -435,15 +437,7 @@ export const SOCIAL_PRESET_REGISTRY: Record<SocialPresetId, SocialPresetDefiniti
   },
   "campaign-launch": {
     approvedAssetId: "agent-q",
-    assetKinds: [
-      "og-card",
-      "ig-post",
-      "ig-story",
-      "linkedin-post",
-      "x-header",
-      "announcement-card",
-      "docs-header",
-    ],
+    assetKinds: ["og-card", "ig-post", "ig-story", "linkedin-post", "x-header", "announcement-card", "docs-header"],
     carouselFrames: [1, 2, 3],
     copy: {
       description: {
@@ -464,15 +458,7 @@ export const SOCIAL_PRESET_REGISTRY: Record<SocialPresetId, SocialPresetDefiniti
   },
   "campaign-signature": {
     approvedAssetId: "signature-black-red",
-    assetKinds: [
-      "og-card",
-      "ig-post",
-      "ig-story",
-      "linkedin-post",
-      "x-header",
-      "docs-header",
-      "quote-card",
-    ],
+    assetKinds: ["og-card", "ig-post", "ig-story", "linkedin-post", "x-header", "docs-header", "quote-card"],
     carouselFrames: [1, 2, 3],
     copy: {
       description: {
@@ -539,7 +525,9 @@ const applyGuideSocialQueryValue = (
 };
 
 const hasCanonicalSocialGuideFallback = (query: URLSearchParams): boolean =>
-  query.has(SOCIAL_QUERY_PARAMS.pack) || query.has(SOCIAL_QUERY_PARAMS.asset) || query.has(SOCIAL_QUERY_PARAMS.approvedAsset);
+  query.has(SOCIAL_QUERY_PARAMS.pack) ||
+  query.has(SOCIAL_QUERY_PARAMS.asset) ||
+  query.has(SOCIAL_QUERY_PARAMS.approvedAsset);
 
 /**
  * Validates whether a string is a supported social theme.
@@ -669,7 +657,9 @@ export const resolveSocialRenderRequest = (input: {
   section?: string | null;
   theme?: string | null;
 }): SocialRequestResolution => {
-  const fallbackSection = isGuideSectionId(String(input.section ?? "")) ? (String(input.section) as GuideSectionId) : "s0";
+  const fallbackSection = isGuideSectionId(String(input.section ?? ""))
+    ? (String(input.section) as GuideSectionId)
+    : "s0";
   const fallbackPreset = resolveSectionSocialPreset(fallbackSection);
   const preset = String(input.preset ?? fallbackPreset).trim() || fallbackPreset;
 
@@ -759,7 +749,10 @@ export const resolveSocialPackRequest = (input: {
 /**
  * Validates a carousel frame against a preset.
  */
-export const resolveSocialCarouselFrame = (presetId: SocialPresetId, frameValue: string | null | undefined):
+export const resolveSocialCarouselFrame = (
+  presetId: SocialPresetId,
+  frameValue: string | null | undefined
+):
   | {
       frame: number;
       ok: true;
@@ -827,28 +820,15 @@ export const resolveSocialPresetCopy = (presetId: SocialPresetId): SocialPresetC
  * Builds the download filename for a rendered social asset.
  */
 export const buildSocialAssetFileName = (request: SocialRenderRequest): string =>
-  `${[
-    "VERTU",
-    request.packId,
-    request.assetKind,
-    request.language,
-    request.theme,
-    request.section,
-  ].join("-")}.png`;
+  `${["VERTU", request.packId, request.assetKind, request.language, request.theme, request.section].join("-")}.png`;
 
 /**
  * Builds the download filename for a rendered carousel frame.
  */
 export const buildSocialCarouselFileName = (request: SocialRenderRequest, frame: number): string =>
-  `${[
-    "VERTU",
-    request.packId,
-    "carousel",
-    `frame-${frame}`,
-    request.language,
-    request.theme,
-    request.section,
-  ].join("-")}.png`;
+  `${["VERTU", request.packId, "carousel", `frame-${frame}`, request.language, request.theme, request.section].join(
+    "-"
+  )}.png`;
 
 /**
  * Builds the static output path fragment for a rendered social asset.

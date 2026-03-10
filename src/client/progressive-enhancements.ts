@@ -6,6 +6,7 @@ import "prismjs/components/prism-javascript";
 import { initializeLogoGenerator as initializeLogoGeneratorEnhancement } from "./logo-generator";
 import { initializeSocialToolkit as initializeSocialToolkitEnhancement } from "./social-toolkit";
 import { GUIDE_DOWNLOADS, type GuideDownloadId } from "../shared/config";
+import { LAYOUT_CONSTANTS, TOAST_DURATION_MS, COPY_BUTTON_RESET_MS } from "../shared/layout-constants";
 import { resolveScrollProgressPercent, resolveTypePlaygroundState } from "../shared/guide-interactions";
 import {
   HTMX_BROWSER_EVENTS,
@@ -90,6 +91,8 @@ const bindGlobalHandlers = (): void => {
     body.addEventListener(HTMX_BROWSER_EVENTS.historyRestore, handleHistoryRestore);
     body.addEventListener(HTMX_BROWSER_EVENTS.responseError, handleAfterRequest);
     body.addEventListener(HTMX_BROWSER_EVENTS.sendError, handleAfterRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.timeout, handleAfterRequest);
+    body.addEventListener(HTMX_BROWSER_EVENTS.swapError, handleAfterRequest);
   }
 
   if (document.readyState === "loading") {
@@ -157,7 +160,7 @@ const handleDocumentClick = (event: Event): void => {
     return;
   }
 
-  const downloadCard = target.closest<HTMLAnchorElement>('a.download-card[id][download]');
+  const downloadCard = target.closest<HTMLAnchorElement>("a.download-card[id][download]");
   if (downloadCard && isGuideDownloadId(downloadCard.id)) {
     const download = GUIDE_DOWNLOADS[downloadCard.id];
     const prefix = shellDataset(download.toastDatasetKey);
@@ -174,9 +177,10 @@ const handleDocumentChange = (event: Event): void => {
 };
 
 const handleDocumentKeydown = (event: KeyboardEvent): void => {
-  const drawerTrigger = event.target instanceof HTMLElement
-    ? event.target.closest<HTMLElement>(`${GUIDE_SELECTORS.drawerOpenButton}, ${GUIDE_SELECTORS.drawerCloseButton}`)
-    : null;
+  const drawerTrigger =
+    event.target instanceof HTMLElement
+      ? event.target.closest<HTMLElement>(`${GUIDE_SELECTORS.drawerOpenButton}, ${GUIDE_SELECTORS.drawerCloseButton}`)
+      : null;
 
   if (drawerTrigger && (event.key === "Enter" || event.key === " ")) {
     event.preventDefault();
@@ -259,7 +263,9 @@ const syncDocumentState = (): void => {
   document.documentElement.setAttribute("data-lang", guideState.language);
   const effectiveTheme =
     guideState.theme === "system"
-      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
       : guideState.theme;
   document.documentElement.setAttribute("data-theme", effectiveTheme);
   document.documentElement.lang = resolveGuideDocumentLanguageTag(guideState.language);
@@ -268,7 +274,7 @@ const syncDocumentState = (): void => {
 const syncDrawerState = (): void => {
   const drawerCheckbox = document.getElementById(GUIDE_DOM_IDS.drawerControl);
   const mainContent = document.getElementById(GUIDE_DOM_IDS.mainContent);
-  const isModal = window.innerWidth < 1024;
+  const isModal = window.innerWidth < LAYOUT_CONSTANTS.drawerModalBreakpointPx;
   if (!isModal && drawerCheckbox instanceof HTMLInputElement && drawerCheckbox.checked) {
     drawerCheckbox.checked = false;
   }
@@ -382,7 +388,11 @@ const toggleDrawer = (nextState: boolean, trigger: HTMLElement | null): void => 
 
 const isDrawerOpen = (): boolean => {
   const drawerCheckbox = document.getElementById(GUIDE_DOM_IDS.drawerControl);
-  return window.innerWidth < 1024 && drawerCheckbox instanceof HTMLInputElement && drawerCheckbox.checked;
+  return (
+    window.innerWidth < LAYOUT_CONSTANTS.drawerModalBreakpointPx &&
+    drawerCheckbox instanceof HTMLInputElement &&
+    drawerCheckbox.checked
+  );
 };
 
 const initializeCodeHighlighting = (): void => {
@@ -549,7 +559,10 @@ const resolveVisibleSectionId = (): GuideSectionId | null => {
     return null;
   }
 
-  const focusLine = Math.min(window.innerHeight * 0.35, 320);
+  const focusLine = Math.min(
+    window.innerHeight * LAYOUT_CONSTANTS.visibleSectionFocusRatio,
+    LAYOUT_CONSTANTS.visibleSectionFocusMaxPx
+  );
   let nearestSectionId = sections[0]?.id ?? "s0";
   let nearestDistance = Number.POSITIVE_INFINITY;
 
@@ -569,7 +582,11 @@ const resolveVisibleSectionId = (): GuideSectionId | null => {
   return isGuideSectionId(nearestSectionId) ? nearestSectionId : "s0";
 };
 
-const syncActiveSectionState = (sectionId: GuideSectionId, historyMode: "push" | "replace", shouldScroll: boolean): void => {
+const syncActiveSectionState = (
+  sectionId: GuideSectionId,
+  historyMode: "push" | "replace",
+  shouldScroll: boolean
+): void => {
   [resolveGuidePage(), resolveShell()].forEach((root) => {
     if (root instanceof HTMLElement) {
       root.dataset.activeSection = sectionId;
@@ -607,9 +624,7 @@ const syncSidebarControlLinks = (sectionId: GuideSectionId): void => {
   const themeCycleBtn = document.querySelector<HTMLAnchorElement>(".guide-theme-cycle[data-guide-theme]");
   if (themeCycleBtn) {
     const currentTheme = themeCycleBtn.dataset.guideTheme;
-    const nextTheme = currentTheme
-      ? nextGuideTheme(resolveGuideState({ theme: currentTheme }).theme)
-      : "light";
+    const nextTheme = currentTheme ? nextGuideTheme(resolveGuideState({ theme: currentTheme }).theme) : "light";
     const href = toSocialGuideHref({
       approvedAssetId: socialQuery.approvedAssetId,
       assetKind: socialQuery.assetKind,
@@ -656,7 +671,11 @@ const syncSectionUrl = (sectionId: GuideSectionId, historyMode: "push" | "replac
   });
   const url = new URL(nextHref, window.location.origin);
 
-  if (window.location.pathname === url.pathname && window.location.search === url.search && window.location.hash === url.hash) {
+  if (
+    window.location.pathname === url.pathname &&
+    window.location.search === url.search &&
+    window.location.hash === url.hash
+  ) {
     return;
   }
 
@@ -700,7 +719,7 @@ const handleCodeCopy = (button: HTMLButtonElement, text: string): Promise<void> 
     button.textContent = doneLabel;
     window.setTimeout(() => {
       button.textContent = readyLabel;
-    }, 1600);
+    }, COPY_BUTTON_RESET_MS);
   });
 
 const copyToClipboard = (text: string): Promise<boolean> => {
@@ -751,7 +770,7 @@ const showToast = (message: string): void => {
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => {
     toastContainer.classList.add("hidden");
-  }, 2200);
+  }, TOAST_DURATION_MS);
 };
 
 const resolveGuidePage = (): HTMLElement | null => document.getElementById(GUIDE_DOM_IDS.page);

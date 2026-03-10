@@ -55,10 +55,8 @@ writeStructuredLog({
   },
 });
 
-const mergeQueuedBuildTarget = (
-  current: GuideDevBuildTarget | null,
-  next: GuideDevBuildTarget
-): GuideDevBuildTarget => (current === "full" || next === "full" ? "full" : next);
+const mergeQueuedBuildTarget = (current: GuideDevBuildTarget | null, next: GuideDevBuildTarget): GuideDevBuildTarget =>
+  current === "full" || next === "full" ? "full" : next;
 
 const scheduleBuild = (reason: string, changedPath: string): void => {
   if (!watchersReady || Date.now() < ignoreWatchEventsUntil) {

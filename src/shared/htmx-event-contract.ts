@@ -8,6 +8,7 @@ export const HTMX_BROWSER_EVENTS = {
   historyRestore: "htmx:historyRestore",
   responseError: "htmx:responseError",
   sendError: "htmx:sendError",
+  swapError: "htmx:swapError",
   timeout: "htmx:timeout",
 } as const;
 
@@ -60,6 +61,7 @@ declare global {
     "htmx:historyRestore": CustomEvent<HtmxHistoryRestoreEventDetail>;
     "htmx:responseError": CustomEvent<HtmxRequestLifecycleEventDetail>;
     "htmx:sendError": CustomEvent<HtmxRequestLifecycleEventDetail>;
+    "htmx:swapError": CustomEvent<HtmxTargetedEventDetail>;
     "htmx:timeout": CustomEvent<HtmxRequestLifecycleEventDetail>;
   }
 
@@ -70,6 +72,7 @@ declare global {
     "htmx:historyRestore": CustomEvent<HtmxHistoryRestoreEventDetail>;
     "htmx:responseError": CustomEvent<HtmxRequestLifecycleEventDetail>;
     "htmx:sendError": CustomEvent<HtmxRequestLifecycleEventDetail>;
+    "htmx:swapError": CustomEvent<HtmxTargetedEventDetail>;
     "htmx:timeout": CustomEvent<HtmxRequestLifecycleEventDetail>;
   }
 }

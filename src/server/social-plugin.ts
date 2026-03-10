@@ -36,10 +36,7 @@ const socialToolkitService = {
 
 const resolveResponseEtag = (body: Uint8Array | string): string => `"${Bun.hash(body).toString(16)}"`;
 
-const resolveSocialResponseHeaders = (
-  request: Request,
-  headers: Record<string, string>
-): Record<string, string> => ({
+const resolveSocialResponseHeaders = (request: Request, headers: Record<string, string>): Record<string, string> => ({
   ...headers,
   [GUIDE_REQUEST_ID_HEADER]: resolveGuideRequestId(request),
 });
@@ -75,11 +72,7 @@ const buildSocialErrorResponse = (request: Request, error: SocialErrorEnvelope):
     status: 404,
   });
 
-const buildConditionalBinaryResponse = (
-  request: Request,
-  body: Uint8Array,
-  contentDisposition: string
-): Response => {
+const buildConditionalBinaryResponse = (request: Request, body: Uint8Array, contentDisposition: string): Response => {
   const etag = resolveResponseEtag(body);
   const responseHeaders = resolveSocialResponseHeaders(request, {
     "Cache-Control": GUIDE_SERVER.assetCacheControl,
@@ -289,10 +282,7 @@ export const socialToolkitPlugin = new Elysia({ name: "socialToolkitPlugin" })
         return buildSocialErrorResponse(request, requestResolution.error);
       }
 
-      const frameResolution = resolveSocialCarouselFrame(
-        requestResolution.value.presetId,
-        frameValue
-      );
+      const frameResolution = resolveSocialCarouselFrame(requestResolution.value.presetId, frameValue);
       if (!frameResolution.ok) {
         return buildSocialErrorResponse(request, frameResolution.error);
       }

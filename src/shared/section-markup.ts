@@ -38,7 +38,11 @@ export interface GuideSectionMeta {
 /**
  * Normalizes and localizes a canonical section fragment for the target language.
  */
-export const prepareSectionMarkup = (sourceMarkup: string, language: GuideLanguage, sectionId: GuideSectionId): string => {
+export const prepareSectionMarkup = (
+  sourceMarkup: string,
+  language: GuideLanguage,
+  sectionId: GuideSectionId
+): string => {
   let markup = sourceMarkup;
   markup = normalizeClassLists(markup);
   markup = annotateLocalizedContent(markup);
@@ -300,7 +304,8 @@ const localizeGeneratorPlaceholders = (markup: string, _language: GuideLanguage)
 const localizeCanvasLabels = (markup: string, _language: GuideLanguage): string =>
   markup.replace(
     new RegExp(`<div([^>]*\\bid="${GUIDE_ASSET_OPERATOR_IDS.socialPreviewPanel}"[^>]*)>`, "g"),
-    (fullMatch, attributes: string) => (attributes.includes("aria-busy=") ? fullMatch : `<div${attributes} aria-busy="false">`)
+    (fullMatch, attributes: string) =>
+      attributes.includes("aria-busy=") ? fullMatch : `<div${attributes} aria-busy="false">`
   );
 
 const localizeControlAriaLabels = (markup: string, language: GuideLanguage): string => {
@@ -371,5 +376,4 @@ const escapeAttribute = (value: string): string =>
 
 const escapeHtml = (value: string): string => escapeAttribute(value).replaceAll("'", "&#39;");
 
-const isUiCopyKey = (value: string): value is keyof typeof UI_COPY =>
-  Object.hasOwn(UI_COPY, value);
+const isUiCopyKey = (value: string): value is keyof typeof UI_COPY => Object.hasOwn(UI_COPY, value);

@@ -110,8 +110,9 @@ const resolveSocialBuildFingerprint = async (canonicalSocialRequestSource: strin
   const approvedAssetSourceFiles = Object.values(SOCIAL_APPROVED_ASSETS).map(({ path }) =>
     resolveGuidePublicAssetSourcePath(path, GUIDE_PATHS.projectRoot)
   );
-  const inputFiles = [...new Set([...GUIDE_SOCIAL_BUILD_INPUT_FILES, ...socialAssetSourceFiles, ...approvedAssetSourceFiles])]
-    .sort((left, right) => left.localeCompare(right));
+  const inputFiles = [
+    ...new Set([...GUIDE_SOCIAL_BUILD_INPUT_FILES, ...socialAssetSourceFiles, ...approvedAssetSourceFiles]),
+  ].sort((left, right) => left.localeCompare(right));
 
   hasher.update(canonicalSocialRequestSource);
 
@@ -211,7 +212,10 @@ const canonicalSocialRequests = resolveCanonicalSocialBuildRequests();
 const canonicalSocialRequestSource = JSON.stringify(canonicalSocialRequests);
 const canonicalSocialPackRequests = [
   ...new Map(
-    canonicalSocialRequests.map((request) => [`${request.packId}:${request.language}:${request.theme}:${request.section}`, request])
+    canonicalSocialRequests.map((request) => [
+      `${request.packId}:${request.language}:${request.theme}:${request.section}`,
+      request,
+    ])
   ).values(),
 ];
 const socialBuildFingerprint = await resolveSocialBuildFingerprint(canonicalSocialRequestSource);
@@ -256,14 +260,15 @@ if (canReuseCanonicalSocialBuild) {
 
 await Bun.write(stagingPaths.socialBuildFingerprintOutput, `${socialBuildFingerprint}\n`);
 
-const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, stylesheetStats, sectionRegistryStats] = await Promise.all([
-  stat(stagingPaths.sectionNavigationOutput),
-  stat(stagingPaths.clientScriptOutput),
-  stat(resolve(stagingPaths.socialManifestOutputRoot, "campaign-signature-en-light-s0.json")),
-  readdir(stagingPaths.socialPublicOutputRoot, { recursive: true }),
-  stat(stagingPaths.stylesheetOutput),
-  stat(stagingPaths.sectionRegistryOutput),
-]);
+const [navigationStats, scriptStats, socialManifestStats, socialPublicEntries, stylesheetStats, sectionRegistryStats] =
+  await Promise.all([
+    stat(stagingPaths.sectionNavigationOutput),
+    stat(stagingPaths.clientScriptOutput),
+    stat(resolve(stagingPaths.socialManifestOutputRoot, "campaign-signature-en-light-s0.json")),
+    readdir(stagingPaths.socialPublicOutputRoot, { recursive: true }),
+    stat(stagingPaths.stylesheetOutput),
+    stat(stagingPaths.sectionRegistryOutput),
+  ]);
 
 await syncGeneratedOutput(stagingBuildDirectory, GUIDE_PATHS.buildDirectory);
 await rm(stagingBuildDirectory, { force: true, recursive: true });

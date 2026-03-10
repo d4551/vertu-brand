@@ -743,7 +743,7 @@ function renderMenu(slide, s, t, pptx, { L, BODY_W, menuTargets }) {
     });
     slide.addText(card[1], {
       x: x + PPTX.style.cardPad,
-      y: y + 0.40,
+      y: y + 0.4,
       w: cardW - PPTX.style.cardPad * 2,
       h: cardH - 0.52,
       fontFace: FONT_FACE.body,
